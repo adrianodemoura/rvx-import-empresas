@@ -3,6 +3,7 @@
 
 # Inicio da contagem do tempo de execução
 START_TIME=$(date +%s%3N)
+readonly DATA_ORIGEM='2025-09-14'
 
 # Carrega as variáveis de ambiente do arquivo .env e correspondente: local, dev, prod
 source "./src/util/global.sh"
