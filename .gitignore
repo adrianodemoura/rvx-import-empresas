@@ -1,0 +1,14 @@
+# environment
+.env.local
+
+# Logs
+*.log
+
+# storage
+storage/tmp/*
+storage/logs/*
+storage/cache/*
+
+!storage/tmp/empty
+!storage/logs/empty
+!storage/cache/empty
