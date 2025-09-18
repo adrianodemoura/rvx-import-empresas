@@ -63,8 +63,8 @@ checkIndexTriggerConstraint() {
 }
 
 importTable() {
-  # local MAX_RECORDS=$(echo "1.000.000.000" | tr -d '.') LIMIT=$(echo "10.000.000" | tr -d '.')
-  local MAX_RECORDS=$(echo "1.000" | tr -d '.') LIMIT=$(echo "100" | tr -d '.')  
+  local MAX_RECORDS=$(echo "1.000.000.000" | tr -d '.') LIMIT=$(echo "10.000.000" | tr -d '.')
+  # local MAX_RECORDS=$(echo "1.000" | tr -d '.') LIMIT=$(echo "100" | tr -d '.')  
   local LAST_ID=0 IMPORTED=0
   local OUTPUT START_TIME_IMPORT SQL LAST_ID_ROW
   local TABLE_IMPORT="$1"
