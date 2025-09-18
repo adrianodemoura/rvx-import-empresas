@@ -23,5 +23,7 @@ CREATE INDEX IF NOT EXISTS estabelecimentos_correio_eletronico_idx ON {schema}.e
 
 CREATE INDEX IF NOT EXISTS simples_cnpj_basico_idx ON {schema}.simples USING btree (cnpj_basico);
 
-CREATE INDEX IF NOT EXISTS socios_cnpj_basico_idx ON {schema}.socios USING btree (cnpj_basico);
-CREATE INDEX IF NOT EXISTS socios_cpf_idx ON {schema}.socios USING btree (cpf);
+CREATE INDEX IF NOT EXISTS socios_cpf_idx               ON {schema}.socios USING btree (cpf);
+CREATE INDEX IF NOT EXISTS socios_cnpj_basico_idx       ON {schema}.socios USING btree (cnpj_basico);
+CREATE INDEX IF NOT EXISTS socios_cnpj_cpf_socio_idx    ON {schema}.socios USING btree (cnpj_cpf_socio);
+CREATE INDEX IF NOT EXISTS socios_nome_socio_idx        ON {schema}.socios USING btree (nome_socio);
