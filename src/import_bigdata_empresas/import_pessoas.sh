@@ -83,7 +83,7 @@ importCpfSocios() {
 # importCpfSocios
 
 # Checa índices e triggers
-checkIndiceTrigger
+# checkIndiceTrigger
 
 # FIM
 echo "---------------------------------------------------------------------------"
