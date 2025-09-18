@@ -36,8 +36,7 @@ CREATE TABLE IF NOT EXISTS {schema}.pj_empresas
     cnpj_basico VARCHAR(8) COLLATE pg_catalog."default",
     data_origem date,
     created_at timestamp without time zone DEFAULT now(),
-    updated_at timestamp without time zone DEFAULT now(),
-    CONSTRAINT pj_empresas_pkey PRIMARY KEY (id)
+    updated_at timestamp without time zone DEFAULT now()
 )
 
 TABLESPACE pg_default;

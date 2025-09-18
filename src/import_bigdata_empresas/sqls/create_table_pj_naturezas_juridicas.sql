@@ -12,8 +12,7 @@ CREATE TABLE IF NOT EXISTS {schema}.pj_naturezas_juridicas
     codigo character(4) COLLATE pg_catalog."default" NOT NULL,
     descricao text COLLATE pg_catalog."default",
     updated_at timestamp without time zone DEFAULT now(),
-    created_at timestamp without time zone DEFAULT now(),
-    CONSTRAINT pj_empresas_pkey PRIMARY KEY (id)
+    created_at timestamp without time zone DEFAULT now()
 )
 
 TABLESPACE pg_default;
