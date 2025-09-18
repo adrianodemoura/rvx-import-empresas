@@ -63,7 +63,7 @@ checkIndexTriggerConstraint() {
 }
 
 importTable() {
-  local MAX_RECORDS=$(echo "1.000.000.000" | tr -d '.') LIMIT=$(echo "10.000.000" | tr -d '.')
+  local MAX_RECORDS=$(echo "1.000.000.000" | tr -d '.') LIMIT=$(echo "1.000.000" | tr -d '.')
   # local MAX_RECORDS=$(echo "1.000" | tr -d '.') LIMIT=$(echo "100" | tr -d '.')  
   local LAST_ID=0 IMPORTED=0
   local OUTPUT START_TIME_IMPORT SQL LAST_ID_ROW
@@ -116,9 +116,9 @@ importTable "pj_qualificacoes_socios" "insert_pj_qualificacoes_socios-select_qua
 importTable "pj_empresas_emails" "insert_pj_empresas_emails-select_estabelecimentos"
 importTable "pj_empresas_telefones" "insert_pj_empresas_telefones-select_estabelecimentos"
 importTable "pj_empresas_enderecos" "insert_pj_empresas_enderecos-select_estabelecimentos"
-importTable "pj_empresas_socios" "insert_pj_empresas_socios-select_socios"
 importTable "pj_empresas" "insert_pj_empresas-select_empresas"
 importTable "pj_empresas_cnaes" "insert_pj_empresas_cnaes-select_estabelecimentos"
+importTable "pj_empresas_socios" "insert_pj_empresas_socios-select_socios"
 
 echo
 checkIndexTriggerConstraint

@@ -80,9 +80,17 @@ unzipFiles() {
 
 subscribeFiles() {
   for csv_file in "$DIR_CSV"/*.csv; do
+
+    # estabelecimentos
+    if [[ $csv_file == *"estabelecimentos"* ]]; then
+      writeLog "🛑 Removendo caracter nulo em $csv_file"
+      sed -i 's/\x0//g' "$csv_file" || writeLog "❌ Erro ao tentar remover caracter nulo de $csv_file"
+    fi
+
+    # sócios
     if [[ $csv_file == *"socios"* ]]; then
-      writeLog " Subscrevendo arquivo $csv_file"
-      sed -i 's/\*\*\*//g; s/\*\*//g' "$csv_file" || echo "Erro em $csv_file"
+      writeLog "🛑 Removendo asterisco em $csv_file"
+      sed -i 's/\*\*\*//g; s/\*\*//g' "$csv_file" || writeLog "❌ Erro ao tentar remover * de cpf em $csv_file"
     fi
   done
 }

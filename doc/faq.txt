@@ -34,6 +34,9 @@ ou
 $ head -n 1000 arquivo_grande.txt > arquivo_mil_linhas.txt
 * melhor o sed
 
+: Como remover o caracter nulo de um CSV ?
+$ sed 's/\x0//g' estabelecimentos9.csv > estabelecimentos9.tmp && mv estabelecimentos9.tmp estabelecimentos9.csv
+
 : Quais os ícones bonitinhos ?
 ❌ ✅ 🛑 📁 📊 ⚠️ 📣 📋 🔗 📄 📥 ⌛ ⏰ ⏱ 🚀 🟢 ⚡ 🔄 💡 😎 😄 👉 🔎 📶 🗄 🏛 🗃 🏹 🔔 ↑ 🏁 🗜️ ⬇️ 🌐 📸 🕵️‍♂️ 👍
 
