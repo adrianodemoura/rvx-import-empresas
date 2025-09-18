@@ -21,8 +21,8 @@ fields: id, cnpj, email, data_origem, origem, updated_at, created_at
 - 70 000 000 / 10 000 000 em -- minutos
 
 : Como criar a docker do postgreSQL ?
-$ docker run --restart=always -d --name postgres-db -e TZ=America/Sao_Paulo -e POSTGRES_PASSWORD=455ttte -e PGDATA=/var/lib/postgresql/data/pgdata -v /media/dados/adrianod/data/rvx-postgresql:/var/lib/postgresql/data -p 5454:5432 postgres:14.2-alpine
-$ docker logs -f postgres-db 
+$ docker run --restart=always -d --name postgres-db --user $(id -u):$(id -g) -e TZ=America/Sao_Paulo -e POSTGRES_PASSWORD=455ttte -e PGDATA=/var/lib/postgresql/data/pgdata -v /media/dados/adrianod/data/rvx-postgresql:/var/lib/postgresql/data -p 5454:5432 postgres:14.2-alpine
+$ docker logs -f postgres-db
 $ docker restart postgres-db
 $ docker exec -it postgres-db cat /var/lib/postgresql/data/pgdata/postgresql.conf | grep -i max_wal_size
 
