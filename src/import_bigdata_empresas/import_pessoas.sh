@@ -6,13 +6,13 @@ CHECK_DB_SCHEMA=true
 CHECK_INDEX_TRIGGER=false
 readonly MODULE_DIR="import_bigdata_empresas"
 readonly ORIGEM="estabelecimentos"
-readonly LOG_NAME_SUCCESS="success_csv_import_${DB_SCHEMA_TMP,,}"
-readonly LOG_NAME_ERROR="error_csv_import_${DB_SCHEMA_TMP,,}"
+readonly LOG_NAME_SUCCESS="success_csv_import_${DB_SCHEMA_PESSOAS,,}"
+readonly LOG_NAME_ERROR="error_csv_import_${DB_SCHEMA_PESSOAS,,}"
 readonly TABLES=("pf_pessoas")
 readonly BATCH_SIZE=$(echo "100.000" | tr -d '.')
 
 writeLog "============================================================================================================================="
-writeLog "✅ [$(date +'%Y-%m-%d %H:%M:%S.%3N')] Iniciando a importação de Pessoas para o Banco de Dados \"$DB_DATABASE\" e o Schema \"$DB_SCHEMA\""
+writeLog "✅ [$(date +'%Y-%m-%d %H:%M:%S.%3N')] Iniciando a importação de Pessoas para o Banco de Dados \"$DB_DATABASE\" e o Schema \"$DB_SCHEMA_PESSOAS\""
 
 checkIndiceTrigger() {
     local SQL="-- pf_pessoas
@@ -87,5 +87,5 @@ importCpfSocios() {
 
 # FIM
 echo "---------------------------------------------------------------------------"
-writeLog "✅ Fim da importação Pessoas para \"$DB_SCHEMA\" em $(calculateExecutionTime)"
+writeLog "✅ Fim da importação Pessoas para \"$DB_SCHEMA_PESSOAS\" em $(calculateExecutionTime)"
 echo
