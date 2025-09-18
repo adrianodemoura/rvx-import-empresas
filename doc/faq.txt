@@ -1,0 +1,119 @@
+: Qual é a relação de tabelas bigdataFinal com Temporárias
+# bigdata_final.pj_cnaes_list
+- link : tmp_empresas.cnaes
+- fields: id, codigo, name, updated_at, created_at
+
+# bigdata_final.pj_empresas
+
+# bigdata_final.pj_empresas_cnaes
+
+# bigdata_final.pj_empresas_emails
+fields: id, cnpj, email, data_origem, origem, updated_at, created_at
+
+# bigdata_final.pj_naturezas_juridicas
+
+# bigdata_final.pj_qualificacoes_socios
+
+: Histórico de importação
+- 1 000 000 /   100 000 em 07 minutos
+- 1 000 000 / 1 000 000 em 02 minutos
+- 10 000 000 / 10 000 000 em 35 minutos
+- 70 000 000 / 10 000 000 em -- minutos
+
+: Como criar a docker do postgreSQL ?
+$ docker run --restart=always -d --name postgres-db -e TZ=America/Sao_Paulo -e POSTGRES_PASSWORD=455ttte -e PGDATA=/var/lib/postgresql/data/pgdata -v /media/dados/adrianod/data/rvx-postgresql:/var/lib/postgresql/data -p 5454:5432 postgres:14.2-alpine
+$ docker logs -f postgres-db 
+$ docker restart postgres-db
+$ docker exec -it postgres-db cat /var/lib/postgresql/data/pgdata/postgresql.conf | grep -i max_wal_size
+
+: Como dividir um arquivo grande ?
+$ sed -n '1,1000p' arquivo_grande.txt > arquivo_mil_linhas.txt
+* é bom para arquivos com vários GIGAS, pois ele não joga tudo na memória.
+
+ou
+$ head -n 1000 arquivo_grande.txt > arquivo_mil_linhas.txt
+* melhor o sed
+
+: Quais os ícones bonitinhos ?
+❌ ✅ 🛑 📁 📊 ⚠️ 📣 📋 🔗 📄 📥 ⌛ ⏰ ⏱ 🚀 🟢 ⚡ 🔄 💡 😎 😄 👉 🔎 📶 🗄 🏛 🗃 🏹 🔔 ↑ 🏁 🗜️ ⬇️ 🌐 📸 🕵️‍♂️ 👍
+
+: Como pegar as últimas linhas de um arquivo ?
+$ tail -n 10 arquivo
+
+: Como pego o número de linha de um arquivo ?
+$ wc -l arquivo
+
+: Como procurar um testo no arquivo ?
+$ egrep "testo a procurar" arquivo
+
+: Qual é o caracter que está empatadando a importação da CSV estabelementos ?
+^@
+Erro ao importar estabelecimentos0.csv_part_ad: ERROR:  unterminated CSV quoted field
+CONTEXTO:  COPY estabelecimentos, line 5000000: ""95261103";"0001";"11";"1";"PEG E PAG";"08";"20081231";"71";"";"";"19930722";"4789007";"";"AVENIDA";..."
+Erro ao importar estabelecimentos9.csv: ERROR:  unterminated CSV quoted field
+CONTEXTO:  COPY estabelecimentos, line 4753437: ""13269396";"0001";"19";"1";"";"03";"20211009";"74";"";"845";"20110217";"6462000";"";"";"CALLE CERRIT..."
+o caracter ^@ está cortando o campo e provoca o erro, tem que editar antes de importar.
+
+: Quantos registros pelo CSV para empresas
+23.537.416 - storage/cache/cnpj_csv/empresas0.csv
+ 4.494.860 - storage/cache/cnpj_csv/empresas1.csv
+ 4.494.860 - storage/cache/cnpj_csv/empresas2.csv
+ 4.494.860 - storage/cache/cnpj_csv/empresas3.csv
+ 4.494.860 - storage/cache/cnpj_csv/empresas4.csv
+ 4.494.860 - storage/cache/cnpj_csv/empresas5.csv
+ 4.494.860 - storage/cache/cnpj_csv/empresas6.csv
+ 4.494.860 - storage/cache/cnpj_csv/empresas7.csv
+ 4.494.860 - storage/cache/cnpj_csv/empresas8.csv
+ 4.494.860 - storage/cache/cnpj_csv/empresas9.csv
+
+: Quantos registros tem as tabelas temporárias de "2025-08-10" ?
+local:
+171.975.929 - empresas_cnaes
+177.380.431 - pj_empresas_cnaes
+ 67.125.899 - estabelecimentos
+ 63.991.156 - empresas
+ 44.584.423 - simples
+ 26.197.302 - socios
+     11.144 - municípios
+      2.718 - cnaes
+        510 - paies
+        136 - qualificacoes
+
+produção:
+45.003.549 - pj_empresas
+22.945.610 - pj_empresas_socios
+171.975.929 - pj_empresas_cnaes
+- pj_empresas_emails
+- pj_empresas_enderecos
+- pj_empresas_socios
+- pj_empresas_telefones
+- pj_naturezas_juridicas
+- pj_qualificacoes_socios
+
+: Quantos minutos para importar 1 milhão de pj_empresas ?
+1 000 000  7 minutos
+
+: Como limpar a tabela pg_empresas ?
+OUTPUT=$(PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -c "truncate $DB_SCHEMA.pj_empresas" 2>&1)
+
+:
+# Tabelas = campos a serem importadas do CSV
+TABLES=(
+    "pj_cnaes_list: fields{codigo, name}, table_tmp: " 
+    "pj_qualificacoes_socios= codigo, descricao" 
+    "pj_naturezas_juridicas= codigo, descricao" 
+    "pj_empresas_telefones= cnpj,telefone, data_origem, origem"
+    "pj_empresas_emails= cnpj, email, data_origem, origem" 
+    "pj_empresas_cnaes= cnpj, cnae, tipo, origem, data_origem"
+    "pj_empresas_socios= cpf, cnpj, identificador, qualificacao, data_entrada date, pais, cpf_representante, nome_representante, qualificacao_representante, faixa_etaria, participacao, origem, data_origem date"
+    "pj_empresas_enderecos= uuid, cnpj, tipo, titulo, logradouro, numero, complemento, bairro, cidade, uf, cep, area_risco, origem, data_origem, latitude, longitude"
+    "pj_empresas= cnpj, razao_social, nome_fantasia, situacao, situacao_descricao, situacao_data, situacao_motivo, situacao_motivo_descricao, tipo, tipo_descricao, abertura, cod_natureza, natureza_juridica_descricao, capital, porte, porte_descricao, origem, qualificacao_responsavel, optante_simples, data_opcao_simples, data_exclusao_simples, data_opcao_mei, data_exclusao_mei, cnpj_basico, data_origem"
+)
+
+: Operadores de comparação numérica comuns em Bash
+- -eq: igual a (equal)
+- -ne: diferente de (not equal)
+- -gt: maior que (greater than)
+- -lt: menor que (less than)
+- -ge: maior ou igual a (greater or equal)
+- -le: menor ou igual a (less or equal)

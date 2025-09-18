@@ -13,12 +13,20 @@ mkdir -p "$DIR_ZIP" "$DIR_CSV"
 # Função para descobrir o último diretório disponível
 get_latest_dir() {
   local url="$1"
-  local latest_dir=$(curl -s "$url" | grep -oP 'href="\K[0-9]{4}-[0-9]{2}(?=/")' | sort | tail -n 1)
-  echo "$latest_dir"
+  curl -s "$url" | grep '<tr>' | grep -v 'Parent Directory' | awk '
+    match($0, /href="([0-9]{4}-[0-9]{2})\//, a) && match($0, /align="right">([0-9]{4}-[0-9]{2}-[0-9]{2})/, b) {
+      print a[1], b[1]
+    }
+  ' | sort | tail -n 1
 }
 
-LATEST_DIR=$(get_latest_dir "$URL_BASE")
+# Pegando os dados do site
+LATEST_INFO=$(get_latest_dir "$URL_BASE")
+LATEST_DIR=$(echo "$LATEST_INFO" | awk '{print $1}')
+LATEST_DATE=$(echo "$LATEST_INFO" | awk '{print $2}')
 writeLog "📁 Diretório mais recente: \"$LATEST_DIR\"" "$LOG_NAME_SUCCESS"
+writeLog "📆 Data do diretório: $LATEST_DATE" "$LOG_NAME_SUCCESS"
+echo "$LATEST_DATE" > "./.data_origem"
 
 # Concatena a URL completa
 URL_BASE_FULL="$URL_BASE$LATEST_DIR/"

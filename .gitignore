@@ -1,5 +1,6 @@
 # environment
 .env.local
+.data_origem
 
 # Logs
 *.log

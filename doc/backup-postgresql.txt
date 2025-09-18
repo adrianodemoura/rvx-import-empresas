@@ -1,0 +1,46 @@
+Configuração do pgBackRest
+Primeiro, você precisa configurar o pgBackRest. Isso envolve criar um arquivo de configuração que especifica as informações do banco de dados e do repositório de backups.
+
+
+[global]
+repo1-path=/var/lib/pgbackrest
+repo1-retention-full=2
+log-level-console=info
+
+[db]
+pg1-path=/var/lib/postgresql/12/main
+pg1-port=5432
+pg1-user=postgres
+
+
+Realizando um Backup Completo
+Antes de realizar um backup incremental, você precisa ter um backup completo. Você pode realizar um backup completo com o seguinte comando:
+
+
+bash
+pgbackrest --stanza=db backup --type=full
+
+
+Realizando um Backup Incremental
+Depois de ter um backup completo, você pode realizar um backup incremental com o seguinte comando:
+
+
+bash
+pgbackrest --stanza=db backup --type=incr
+
+
+Restauração do Banco de Dados
+Para restaurar o banco de dados a partir de um backup incremental, você pode usar o seguinte comando:
+
+
+bash
+pgbackrest --stanza=db restore
+
+
+Agendamento de Backups
+Você pode agendar os backups usando um agendador de tarefas como o cron. Por exemplo, você pode agendar um backup completo semanal e backups incrementais diários:
+
+
+bash
+0 0 * * 0 pgbackrest --stanza=db backup --type=full
+0 0 * * 1-6 pgbackrest --stanza=db backup --type=incr
