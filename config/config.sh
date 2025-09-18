@@ -3,10 +3,11 @@
 
 # Inicio da contagem do tempo de execução
 START_TIME=$(date +%s%3N)
-# readonly DATA_ORIGEM='2025-09-14'
+
+# Recupera a data de origem
 readonly DATA_ORIGEM=$(cat .data_origem || echo '2025-09-14')
 
-# Carrega as variáveis de ambiente do arquivo .env e correspondente: local, dev, prod
+# Carrega as variáveis de ambiente do arquivo .env e .local
 source "./src/util/global.sh"
 loadEnv ".env.local"
 
