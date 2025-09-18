@@ -8,11 +8,12 @@ CREATE SEQUENCE IF NOT EXISTS {schema}.pj_naturezas_juridicas_id_seq
 -- Table: {schema}.pj_naturezas_juridicas
 CREATE TABLE IF NOT EXISTS {schema}.pj_naturezas_juridicas
 (
+    id bigint NOT NULL DEFAULT nextval('{schema}.pj_naturezas_juridicas_id_seq'::regclass),
     codigo character(4) COLLATE pg_catalog."default" NOT NULL,
     descricao text COLLATE pg_catalog."default",
     updated_at timestamp without time zone DEFAULT now(),
     created_at timestamp without time zone DEFAULT now(),
-    id bigint NOT NULL DEFAULT nextval('{schema}.pj_naturezas_juridicas_id_seq'::regclass)
+    CONSTRAINT pj_empresas_pkey PRIMARY KEY (id)
 )
 
 TABLESPACE pg_default;

@@ -8,11 +8,12 @@ CREATE SEQUENCE IF NOT EXISTS {schema}.pj_qualificacoes_socios_id_seq
 -- Table: {schema}.pj_qualificacoes_socios
 CREATE TABLE IF NOT EXISTS {schema}.pj_qualificacoes_socios
 (
+    id bigint NOT NULL DEFAULT nextval('{schema}.pj_qualificacoes_socios_id_seq'::regclass),
     codigo character(2) COLLATE pg_catalog."default" NOT NULL,
     descricao text COLLATE pg_catalog."default",
     updated_at timestamp without time zone DEFAULT now(),
     created_at timestamp without time zone DEFAULT now(),
-    id bigint NOT NULL DEFAULT nextval('{schema}.pj_qualificacoes_socios_id_seq'::regclass),
+    CONSTRAINT pj_empresas_pkey PRIMARY KEY (id),
     CONSTRAINT qualificacoes_socios_codigo_key UNIQUE (codigo)
 )
 
