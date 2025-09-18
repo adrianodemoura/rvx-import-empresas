@@ -6,8 +6,8 @@ CHECK_DB_SCHEMA=true
 CHECK_INDEX_TRIGGER=false
 readonly MODULE_DIR="import_temporarias"
 readonly ORIGEM="estabelecimentos"
-readonly LOG_NAME_SUCCESS="success_pessoas_import_${DB_SCHEMA_TMP,,}"
-readonly LOG_NAME_ERROR="error_pessoas_import_${DB_SCHEMA_TMP,,}"
+readonly LOG_NAME_SUCCESS="success_csv_import_${DB_SCHEMA_TMP,,}"
+readonly LOG_NAME_ERROR="error_csv_import_${DB_SCHEMA_TMP,,}"
 readonly TABLES=("naturezas" "municipios" "paises" "motivos" "qualificacoes" "cnaes" "empresas" "socios" "simples" "estabelecimentos")
 
 writeLog "============================================================================================================================="
