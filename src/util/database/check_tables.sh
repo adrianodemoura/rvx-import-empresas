@@ -13,7 +13,7 @@ for LINE in "${TABLES[@]}"; do
     TABLE_CHECK="SELECT to_regclass('$DB_SCHEMA.$TABLE');"
     TABLE_EXISTS=$(PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -c "$TABLE_CHECK" -t -A)
     if [[ "$TABLE_EXISTS" == "$DB_SCHEMA.$TABLE" ]]; then
-        writeLog "✅ Tabela \"$TABLE\" checada com sucesso." "$LOG_NAME_SUCCESS"
+        writeLog "✅ Tabela \"$TABLE\" checada com sucesso no schema $DB_SCHEMA."
     else
         # Cria a tabela se não existir
         MIGRATION_FILE="./src/$MODULE_DIR/sqls/create_table_$TABLE.sql"

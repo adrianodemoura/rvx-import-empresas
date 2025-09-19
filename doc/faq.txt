@@ -93,6 +93,7 @@ o caracter ^@ está cortando o campo e provoca o erro, tem que editar antes de i
 
 : Quantos registros tem as tabelas temporárias de "2025-08-10" ?
 local:
+249.947.040 - pf_pessoas
 171.975.929 - empresas_cnaes
 179.163.131 - pj_empresas_cnaes
  67.640.763 - pj_empresas_enderecos

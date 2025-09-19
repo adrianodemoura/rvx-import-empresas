@@ -1,6 +1,11 @@
+-- extensão dblink
+DROP EXTENSION dblink;
+CREATE EXTENSION IF NOT EXISTS dblink SCHEMA tmp_empresas;
+
 -- verifia o progresso 
 SELECT * FROM pg_stat_progress_create_index;
-SELECT pid, datname, command, phase, tuples_total, tuples_done FROM pg_stat_progress_create_index;
+SELECT pid, datname, command, phase, tuples_total, tuples_done, blocks_total, blocks_done
+	FROM pg_stat_progress_create_index;
 
 -- verifia índices
 SELECT indexname FROM pg_indexes WHERE tablename = 'pf_pessoas' AND schemaname = 'bigdata_final';
@@ -9,8 +14,16 @@ SELECT indexname FROM pg_indexes WHERE tablename = 'pf_pessoas' AND schemaname =
 SELECT conname FROM pg_constraint WHERE conrelid = 'bigdata_final.pf_pessoas'::regclass;
 
 -- pf_pessoas
-SELECT COUNT(1) FROM tmp_bigdata.pf_pessoas;
-SELECT * FROM bigdata_final.pf_pessoas ORDER BY id DESC LIMIT 10;
+SELECT COUNT(1) FROM bigdata_final.pf_pessoas;
+SELECT * 
+	FROM bigdata_final.pf_pessoas pp
+	WHERE pp.ID=15257691
+	ORDER BY id DESC 
+	LIMIT 10;
+SELECT COUNT(1) AS total, pp.id 
+	FROM bigdata_final.pf_pessoas pp
+	GROUP BY pp.id
+	HAVING count(1) > 1;
 
 -- pj_qualificacoes_socios
 SELECT * FROM tmp_bigdata.pj_qualificacoes_socios q LIMIT 101;
