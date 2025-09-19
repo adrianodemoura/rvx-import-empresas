@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS {schema}.pf_pessoas
     id bigint NOT NULL DEFAULT nextval('{schema}.pf_pessoas_id_seq'::regclass),
     cpf character varying(14) COLLATE pg_catalog."default",
     nome character varying(255) COLLATE pg_catalog."default",
+    nascimento character varying(12) COLLATE pg_catalog."default",
+    sexo character varying(10) COLLATE pg_catalog."default",
     cpf_basico character varying(6) COLLATE pg_catalog."default",
     updated_at timestamp without time zone DEFAULT now(),
     created_at timestamp without time zone DEFAULT now()

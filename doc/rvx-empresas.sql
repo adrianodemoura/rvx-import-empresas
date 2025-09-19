@@ -9,7 +9,7 @@ SELECT indexname FROM pg_indexes WHERE tablename = 'pf_pessoas' AND schemaname =
 SELECT conname FROM pg_constraint WHERE conrelid = 'bigdata_final.pf_pessoas'::regclass;
 
 -- pf_pessoas
-SELECT COUNT(1) FROM tmp_bigdata.pf_pessoas;
+SELECT COUNT(1) FROM bigdata_final.pf_pessoas;
 SELECT * FROM bigdata_final.pf_pessoas ORDER BY id DESC LIMIT 10;
 
 -- pj_qualificacoes_socios
