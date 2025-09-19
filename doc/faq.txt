@@ -1,3 +1,16 @@
+: Como fazer um backup de pessoas ?
+$ docker exec -it postgres-db psql -U postgres -d rvx-bigdata -c "COPY (SELECT id, cpf, nome, cpf_basico FROM bigdata_final.pf_pessoas) TO STDOUT DELIMITER ';' CSV HEADER" | gzip > pf_pessoas.csv.gz
+$ docker exec -it postgres-db psql -U postgres -d rvx-bigdata -h 5.189.187.92 -p 5454 -c "COPY (SELECT id, cpf, nome, cpf_basico FROM bigdata_final.pf_pessoas) TO STDOUT DELIMITER ';' CSV HEADER" | gzip > pf_pessoas.csv.gz
+$ docker exec -it postgres-db psql -U postgres -d rvx-bigdata \
+  -c "
+INSERT INTO bigdata_final.pf_pessoas (id, cpf, nome, cpf_basico)
+SELECT id, cpf, nome, cpf_basico
+FROM bigdata_final.dblink(
+  'dbname=rvx-bigdata port=5454 host=5.189.187.92 user=postgres password=455ttte',
+  'SELECT id, cpf, nome, cpf_basico FROM bigdata_final.pf_pessoas'
+) AS t(id integer, cpf text, nome text, cpf_basico text);
+"
+
 : Qual é a relação de tabelas bigdataFinal com Temporárias
 # bigdata_final.pj_cnaes_list
 - link : tmp_empresas.cnaes
@@ -72,9 +85,10 @@ o caracter ^@ está cortando o campo e provoca o erro, tem que editar antes de i
 : Quantos registros tem as tabelas temporárias de "2025-08-10" ?
 local:
 171.975.929 - empresas_cnaes
-177.380.431 - pj_empresas_cnaes
+179.163.131 - pj_empresas_cnaes
+ 67.640.763 - pj_empresas_enderecos
  67.125.899 - estabelecimentos
- 63.991.156 - empresas
+ 67.640.763 - pj_empresas
  44.584.423 - simples
  26.197.302 - socios
      11.144 - municípios
