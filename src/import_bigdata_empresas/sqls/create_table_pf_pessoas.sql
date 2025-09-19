@@ -14,8 +14,7 @@ CREATE TABLE IF NOT EXISTS {schema}.pf_pessoas
     nome character varying(255) COLLATE pg_catalog."default",
     cpf_basico character varying(6) COLLATE pg_catalog."default",
     updated_at timestamp without time zone DEFAULT now(),
-    created_at timestamp without time zone DEFAULT now(),
-    CONSTRAINT pf_pessoas_pkey PRIMARY KEY (id)
+    created_at timestamp without time zone DEFAULT now()
 )
 
 TABLESPACE pg_default;
