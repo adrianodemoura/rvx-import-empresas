@@ -15,11 +15,12 @@ writeLog "======================================================================
 writeLog "✅ [$(date +'%Y-%m-%d %H:%M:%S.%3N')] Iniciando a importação de Pessoas para o Banco de Dados \"$DB_DATABASE\" e o Schema \"$DB_SCHEMA_PESSOAS\""
 
 checkIndiceTrigger() {
+    writeLog "📣 Aguarde a verificação de índices e constraints da tabela \"$DB_SCHEMA_PESSOAS.pf_pessoas\"..."
     local SQL="-- pf_pessoas
         CREATE INDEX IF NOT EXISTS idx_pf_pessoas_cpf ON $DB_SCHEMA_PESSOAS.pf_pessoas USING btree (cpf);
         CREATE INDEX IF NOT EXISTS idx_pf_pessoas_nome ON $DB_SCHEMA_PESSOAS.pf_pessoas USING btree (nome);
         CREATE INDEX IF NOT EXISTS idx_pf_pessoas_cpf_basico ON $DB_SCHEMA_PESSOAS.pf_pessoas USING btree (cpf_basico);
-        ALTER TABLE $DB_SCHEMA_PESSOAS.pf_pessoas ADD CONSTRAINT unique_pf_pessoas_id UNIQUE (id);
+        -- ALTER TABLE $DB_SCHEMA_PESSOAS.pf_pessoas ADD CONSTRAINT unique_pf_pessoas_id UNIQUE (id);
         "
     if PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -c "$SQL"; then
         writeLog "✅ Indíces criados com sucesso ..."
@@ -29,17 +30,18 @@ checkIndiceTrigger() {
 }
 
 importCpfSocios() {
-    local START_TIME_IMPORT START_ID=1 END_ID=$BATCH_SIZE TOTAL TOTAL_IMPORTED OUTPUT ROWS_AFFECTED
+    local START_TIME_IMPORT START_ID=1 END_ID=$BATCH_SIZE TOTAL TOTAL_IMPORTED OUTPUT ROWS_AFFECTED COUNT
     local MAX_RECORDS=$(echo "1.000.000.000" | tr -d '.') LIMIT=$(echo "1.000.000" | tr -d '.')
-    # local MAX_RECORDS=$(echo "1.000" | tr -d '.') LIMIT=$(echo "100" | tr -d '.')
 
     # Checa a tabela pf_pessoas
-    if PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -c "DROP TABLE IF EXISTS ${DB_SCHEMA_PESSOAS}.pf_pessoas CASCADE"; then
-      writeLog "🗑️ Tabela \"${DB_SCHEMA_PESSOAS}.pf_pessoas\" removida com sucesso."
-    else
-      writeLog "⚠️ Falha ao tentar remover a tabela \"${DB_SCHEMA_PESSOAS}.pf_pessoas\"."
-    fi
     source "./src/util/database/check_tables.sh" "$DB_SCHEMA_PESSOAS"
+
+    # Checa se a tabela está cheia, se sim não prossegue.
+    COUNT=$(PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -t -A -c "SELECT COUNT(1) FROM ${DB_SCHEMA_PESSOAS}.pf_pessoas")
+    if [ "$COUNT" -gt 0 ]; then
+        writeLog "❌ Tabela \"${DB_SCHEMA_PESSOAS}.pf_pessoas\" já está populada."
+        exit 1
+    fi
 
     # Descobre o maior ID do banco origem
     TOTAL=$(PGPASSWORD="$PROD_DB_PASSWORD" "${PROD_PSQL_CMD[@]}" -t -A -c "SELECT max(id) FROM ${PROD_DB_SCHEMA}.pf_pessoas")
@@ -51,15 +53,15 @@ importCpfSocios() {
     do
         START_TIME_IMPORT=$(date +%s%3N)
 
-        OUTPUT=$(PGPASSWORD="$PROD_DB_PASSWORD" docker exec -it postgres-db psql -U $DB_USER -d $DB_DATABASE \
-            -c "
-            INSERT INTO $DB_SCHEMA_PESSOAS.pf_pessoas (id, cpf, nome, cpf_basico)
-            SELECT id, cpf, nome, cpf_basico
-            FROM bigdata_final.dblink(
-            'dbname=$PROD_DB_DATABASE port=$PROD_DB_PORT host=$PROD_DB_HOST user=$PROD_DB_USER password=$PROD_DB_PASSWORD',
-            'SELECT id, cpf, nome, cpf_basico FROM bigdata_final.pf_pessoas LIMIT $LIMIT OFFSET $i'
-            ) AS t(id integer, cpf text, nome text, cpf_basico text);
-            " 2>&1)
+        # OUTPUT=$(PGPASSWORD="$PROD_DB_PASSWORD" docker exec -it postgres-db psql -U $DB_USER -d $DB_DATABASE -c \
+        #     "INSERT INTO $DB_SCHEMA_PESSOAS.pf_pessoas (id, cpf, nome, cpf_basico)
+        #       SELECT id, cpf, nome, cpf_basico
+        #       FROM dblink(
+        #           'dbname=$PROD_DB_DATABASE port=$PROD_DB_PORT host=$PROD_DB_HOST user=$PROD_DB_USER password=$PROD_DB_PASSWORD',
+        #           'SELECT id, cpf, nome, cpf_basico FROM bigdata_final.pf_pessoas LIMIT $LIMIT OFFSET $i'
+        #       ) AS t(id integer, cpf text, nome text, cpf_basico text);
+        #     " 2>&1)
+        OUTPUT="INSERT 0"
 
         ROWS_AFFECTED=$(echo "$OUTPUT" | grep -oP '(?<=INSERT 0 )\d+')
         if [ "$ROWS_AFFECTED" = "0" ]; then
@@ -71,14 +73,14 @@ importCpfSocios() {
         writeLog "📣 Transferido bloco $(format_number $i)/$(format_number $LIMIT) em $(calculateExecutionTime $START_TIME_IMPORT)"
     done
 
-    writeLog "🏁 Importação concluída. Total: $(format_number $TOTAL_IMPORTED) registros."
+    writeLog "🏁 Importação concluída. até: $(format_number $TOTAL_IMPORTED) registros."
 }
 
 # checa banco de dados e schema
 source "./src/util/database/check_db.sh" "$DB_SCHEMA_PESSOAS"
 
 # Importa os Sócios do banco BigDATA
-importCpfSocios
+# importCpfSocios
 
 # Checa índices e triggers
 checkIndiceTrigger
