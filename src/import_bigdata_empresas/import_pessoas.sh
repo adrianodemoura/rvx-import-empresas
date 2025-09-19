@@ -67,7 +67,7 @@ importPfPessoas() {
     # writeLog "🔎 Total de registros a importar: $(format_number $TOTAL)"
 
     # Loop até chegar no final
-    writeLog "🔎 Aguarde a Importação de $PROD_DB_HOST.$PROD_DB_SCHEMA.pf_pessoas para $DB_HOST.$DB_SCHEMA_PESSOAS.pf_pessoas"
+    writeLog "🔎 Aguarde a Importação de \"$PROD_DB_HOST.$PROD_DB_SCHEMA.pf_pessoas\" para \"$DB_HOST.$DB_SCHEMA_PESSOAS.pf_pessoas\"..."
     TOTAL_IMPORTED=0
     for ((i=0; i<=MAX_RECORDS; i+=$LIMIT))
     do
