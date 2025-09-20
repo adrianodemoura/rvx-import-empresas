@@ -63,5 +63,12 @@ BEGIN
         CREATE INDEX IF NOT EXISTS idx_pj_cnaes_list_updated_at ON {schema}.pj_cnaes_list USING btree (updated_at);
         CREATE INDEX IF NOT EXISTS idx_pj_cnaes_list_codigo ON {schema}.pj_cnaes_list USING btree (codigo);
     END IF;
+
+    -- pf_pessoas
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='{schema}' AND table_name='pf_pessoas') THEN
+        CREATE INDEX IF NOT EXISTS idx_pf_pessoas_cpf ON {schema}.pf_pessoas USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_pessoas_nome ON {schema}.pf_pessoas USING btree (nome);
+        CREATE INDEX IF NOT EXISTS idx_pf_pessoas_cpf_basico ON {schema}.pf_pessoas USING btree (cpf_basico);
+    END IF;
 END $$;
 

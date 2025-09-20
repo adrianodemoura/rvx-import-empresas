@@ -11,6 +11,7 @@ SELECT conname FROM pg_constraint WHERE conrelid = 'bigdata_final.pf_pessoas'::r
 -- pf_pessoas
 SELECT COUNT(1) FROM bigdata_final.pf_pessoas;
 SELECT * FROM bigdata_final.pf_pessoas ORDER BY id DESC LIMIT 10;
+SELECT COUNT(1), pp.id FROM bigdata_final.pf_pessoas pp GROUP BY pp.id HAVING count(1)>1;
 
 -- pj_qualificacoes_socios
 SELECT * FROM tmp_bigdata.pj_qualificacoes_socios q LIMIT 101;

@@ -13,26 +13,6 @@ readonly TABLES=("pf_pessoas")
 writeLog "============================================================================================================================="
 writeLog "✅ [$(date +'%Y-%m-%d %H:%M:%S.%3N')] Iniciando a importação de Pessoas para o Banco de Dados \"$DB_DATABASE\" e o Schema \"$DB_SCHEMA_PESSOAS\""
 
-checkIndiceTrigger() {
-    local OUTPUT
-    local SQL="-- pf_pessoas
-        CREATE INDEX IF NOT EXISTS idx_pf_pessoas_id ON $DB_SCHEMA_PESSOAS.pf_pessoas USING btree (id);
-        CREATE INDEX IF NOT EXISTS idx_pf_pessoas_cpf ON $DB_SCHEMA_PESSOAS.pf_pessoas USING btree (cpf);
-        CREATE INDEX IF NOT EXISTS idx_pf_pessoas_nome ON $DB_SCHEMA_PESSOAS.pf_pessoas USING btree (nome);
-        CREATE INDEX IF NOT EXISTS idx_pf_pessoas_cpf_basico ON $DB_SCHEMA_PESSOAS.pf_pessoas USING btree (cpf_basico);
-        -- ALTER TABLE $DB_SCHEMA_PESSOAS.pf_pessoas ADD CONSTRAINT unique_pf_pessoas_id UNIQUE (id);"
-
-    writeLog "📣 Aguarde a verificação de índices e constraints da tabela \"$DB_SCHEMA_PESSOAS.pf_pessoas\"..."
-
-    OUTPUT=$(PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -t -A -c "$SQL" 2>&1)
-    if [[ $? -ne 0 ]]; then
-        writeLog "❌ Falha ao tentar criar indices de $DB_SCHEMA_PESSOAS.pf_pessoas "
-        exit 1
-    fi
-
-    writeLog "✅ Indíces checados com sucesso ..."
-}
-
 checkFunctions() {
     local OUTPUT
     local SQL="CREATE EXTENSION IF NOT EXISTS dblink SCHEMA $DB_SCHEMA_TMP;"
@@ -106,8 +86,10 @@ source "./src/util/database/check_tables.sh" "$DB_SCHEMA_PESSOAS"
 # Importa os Sócios do banco BigDATA
 importPfPessoas
 
-# Checa índices e triggers
-checkIndiceTrigger
+# Checa índices, triggers e constraints
+source "./src/util/database/check_indexes.sh" "$DB_SCHEMA_PESSOAS"
+source "./src/util/database/check_triggers.sh" "$DB_SCHEMA_PESSOAS"
+source "./src/util/database/check_constraints.sh" "$DB_SCHEMA_PESSOAS"
 
 # FIM
 echo

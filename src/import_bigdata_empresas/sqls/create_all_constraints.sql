@@ -27,4 +27,11 @@ BEGIN
             ALTER TABLE IF EXISTS {schema}.pj_cnaes_list ADD CONSTRAINT pj_cnaes_list_pkey PRIMARY KEY (id);
         END IF;
     END IF;
+
+    -- pf_pessoas
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='{schema}' AND table_name='pf_pessoas') THEN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'pf_pessoas_pkey' AND conrelid = '{schema}.pf_pessoas'::regclass) THEN
+            ALTER TABLE IF EXISTS {schema}.pf_pessoas ADD CONSTRAINT pf_pessoas_pkey PRIMARY KEY (id);
+        END IF;
+    END IF;
 END $$;
