@@ -11,6 +11,9 @@ readonly DATA_ORIGEM=$(cat .data_origem || echo '2025-09-14')
 source "./src/util/global.sh"
 loadEnv ".env.local"
 
+#
+trap "writeLog '⛔ Cancelado pelo usuário'; kill 0; exit 130" INT TERM
+
 # Atalho para conexão com o banco de dados no servidor de testes
 PSQL_CMD=(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_DATABASE")
 
