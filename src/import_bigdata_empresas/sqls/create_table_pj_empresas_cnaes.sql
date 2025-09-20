@@ -15,8 +15,7 @@ CREATE TABLE IF NOT EXISTS {schema}.pj_empresas_cnaes
     origem character varying(20) COLLATE pg_catalog."default",
     data_origem date,
     updated_at timestamp without time zone DEFAULT now(),
-    created_at timestamp without time zone DEFAULT now(),
-    CONSTRAINT pj_empresas_cnaes_pkey PRIMARY KEY (id)
+    created_at timestamp without time zone DEFAULT now()
 )
 
 TABLESPACE pg_default;

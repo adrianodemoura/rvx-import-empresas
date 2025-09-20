@@ -9,7 +9,6 @@ readonly ORIGEM="estabelecimentos"
 readonly LOG_NAME_SUCCESS="success_pf_pessoas_import_${DB_SCHEMA_PESSOAS,,}"
 readonly LOG_NAME_ERROR="error_pf_pessoas_import_${DB_SCHEMA_PESSOAS,,}"
 readonly TABLES=("pf_pessoas")
-readonly BATCH_SIZE=$(echo "1.000.000" | tr -d '.')
 
 writeLog "============================================================================================================================="
 writeLog "✅ [$(date +'%Y-%m-%d %H:%M:%S.%3N')] Iniciando a importação de Pessoas para o Banco de Dados \"$DB_DATABASE\" e o Schema \"$DB_SCHEMA_PESSOAS\""
@@ -46,13 +45,13 @@ checkFunctions() {
         exit 1
     fi
 
-    writeLog "✅ Função \"dblink\" checada com sucesso ..."
+    writeLog "✅ Função \"dblink\" checada com sucesso."
     echo
 }
 
 importPfPessoas() {
     local START_TIME_IMPORT START_ID=1 END_ID=$BATCH_SIZE TOTAL TOTAL_IMPORTED OUTPUT ROWS_AFFECTED COUNT
-    local MAX_RECORDS=$(echo "1.000.000.000" | tr -d '.') LIMIT=$(echo "10.000.000" | tr -d '.')
+    local MAX_RECORDS=$(echo "1.000.000.000" | tr -d '.') LIMIT=$(echo "10.000.000" | tr -d '.') END_ID=$(echo "1.000.000" | tr -d '.')
     # local MAX_RECORDS=$(echo "1.000" | tr -d '.') LIMIT=$(echo "100" | tr -d '.')
 
     # Checa se a tabela está cheia, se sim não prossegue.
