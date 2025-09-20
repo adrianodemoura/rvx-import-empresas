@@ -1,3 +1,14 @@
+: Como exportar a tabela "pj_empresas_socios" ?
+$ docker exec -t postgres-db pg_dump -U postgres -d rvx-bigdata -t bigdata_empresas.pj_empresas_socios | gzip > pj_empresas_socios.sql.gz
+
+: Como importar a tabela "pj_qualificacoes_socios" ?
+$ gunzip -c pj_qualificacoes_socios.sql.gz | docker exec -i postgres-db-hd2-type2 psql -U postgres -d rvx-bigdata
+* certifique-se que de que a sequence existe.
+
+: Como importar a tabela "pj_empresas_socios" ?
+$ gunzip -c pj_empresas_socios.sql.gz | docker exec -i postgres-db-hd2-type2 psql -U postgres -d rvx-bigdata
+* certifique-se que de que a sequence existe.
+
 : Como verificar o status da criação de índice de uma tabela ?
 > SELECT pid, datname, command, phase, tuples_total, tuples_done FROM pg_stat_progress_create_index;
 
