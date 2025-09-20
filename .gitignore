@@ -10,6 +10,6 @@ storage/tmp/*
 storage/logs/*
 storage/cache/*
 
-!storage/tmp/empty
-!storage/logs/empty
-!storage/cache/empty
+!storage/tmp/.empty
+!storage/logs/.empty
+!storage/cache/.empty
