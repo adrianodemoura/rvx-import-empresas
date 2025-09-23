@@ -3,7 +3,7 @@
 #
 source "./config/config.sh"
 LOG_NAME_SUCCESS="change_schemas"
-tables=(pj_cnaes_list pj_qualificacoes_socios pj_empresas pj_empresas_cnaes pj_empresas_emails pj_empresas_enderecos pj_empresas_socios pj_empresas_telefones pj_empresas_juridicas)
+tables=(pj_cnaes_list pj_qualificacoes_socios pj_empresas pj_empresas_cnaes pj_empresas_emails pj_empresas_enderecos pj_empresas_socios pj_empresas_telefones pj_naturezas_juridicas)
 
 writeLog "============================================================================================================================="
 writeLog "✅ Iniciando a TROCA de schema das tabelas de '$DB_SCHEMA' para o schema '$DB_SCHEMA_FINAL' "
