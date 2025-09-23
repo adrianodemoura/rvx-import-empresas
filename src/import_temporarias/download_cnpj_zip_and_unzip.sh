@@ -1,36 +1,21 @@
 #!/bin/bash
 #
 source "./config/config.sh"
-readonly LOG_NAME_SUCCESS="success_csv_download"
-readonly LOG_NAME_ERROR="error_csv_download"
+LOG_NAME="download_cnpj_zip_and_unzip"
 
 writeLog "=====================================================================================================================" "$LOG_NAME_SUCCESS"
-writeLog "⚠️ Iniciando a importação CSV às [$(date +'%Y-%m-%d %H:%M:%S.%3N')]..." "$LOG_NAME_SUCCESS"
+writeLog "⚠️ Iniciando a importação CSV às [$(date +'%Y-%m-%d %H:%M:%S.%3N')]..."
 echo
 
 mkdir -p "$DIR_ZIP" "$DIR_CSV"
 
-# Função para descobrir o último diretório disponível
-get_latest_dir() {
-  local url="$1"
-  curl -s "$url" | grep '<tr>' | grep -v 'Parent Directory' | awk '
-    match($0, /href="([0-9]{4}-[0-9]{2})\//, a) && match($0, /align="right">([0-9]{4}-[0-9]{2}-[0-9]{2})/, b) {
-      print a[1], b[1]
-    }
-  ' | sort | tail -n 1
-}
-
-# Pegando os dados do site
-LATEST_INFO=$(get_latest_dir "$URL_BASE")
-LATEST_DIR=$(echo "$LATEST_INFO" | awk '{print $1}')
-LATEST_DATE=$(echo "$LATEST_INFO" | awk '{print $2}')
-writeLog "📁 Diretório mais recente: \"$LATEST_DIR\"" "$LOG_NAME_SUCCESS"
-writeLog "📆 Data do diretório: $LATEST_DATE" "$LOG_NAME_SUCCESS"
-echo "$LATEST_DATE" > "./.data_origem"
+#
+writeLog "📁 Diretório mais recente: \"$LATEST_DIR\""
+writeLog "📆 Data do diretório: $LATEST_DATE"
 
 # Concatena a URL completa
 URL_BASE_FULL="$URL_BASE$LATEST_DIR/"
-writeLog "🌐 URL completa: $URL_BASE_FULL" "$LOG_NAME_SUCCESS"
+writeLog "🌐 URL completa: $URL_BASE_FULL"
 
 downloadFiles() {
   mkdir -p "$DIR_ZIP"
@@ -38,14 +23,14 @@ downloadFiles() {
 
   curl -s "$URL_BASE_FULL" | grep -oP 'href="\K[^"]+\.zip(?=")' | while read -r zip_file; do
     if [ -f "$DIR_ZIP/$zip_file" ]; then
-      writeLog "📄 Arquivo $zip_file já existe, pulando..." "$LOG_NAME_SUCCESS"
+      writeLog "📄 Arquivo $zip_file já existe, pulando..."
     else
-      writeLog "⬇️ Baixando $zip_file ..." "$LOG_NAME_SUCCESS"
+      writeLog "⬇️ Baixando $zip_file ..."
       curl -# -o "$DIR_ZIP/$zip_file" "$URL_BASE_FULL$zip_file"
     fi
   done
 
-  writeLog "⬇️  Download de $(du -h "$DIR_ZIP") concluído." "$LOG_NAME_SUCCESS"
+  writeLog "⬇️  Download de $(du -h "$DIR_ZIP") concluído."
   echo
 }
 
@@ -55,11 +40,11 @@ unzipFiles() {
       ZIP_FILENAME=$(basename "$zip_file")
       ZIP_FILENAME_WITH_CSV="${ZIP_FILENAME%.zip}"
       CSV_FILENAME=$(unzip -l "$zip_file" | awk 'NR==4 {print $4}')
-      writeLog "⬇️ Descompactando $CSV_FILENAME -  $ZIP_FILENAME_WITH_CSV -  $ZIP_FILENAME para $DIR_CSV ..." "$LOG_NAME_SUCCESS"
+      writeLog "⬇️ Descompactando $CSV_FILENAME -  $ZIP_FILENAME_WITH_CSV -  $ZIP_FILENAME para $DIR_CSV ..."
 
       # Se arquivo já existe, pula
       if [ -f "$DIR_CSV/${ZIP_FILENAME_WITH_CSV,,}.csv" ]; then
-        writeLog "📄 Arquivo ${ZIP_FILENAME_WITH_CSV,,}.csv já existe, pulando..." "$LOG_NAME_SUCCESS"
+        writeLog "📄 Arquivo ${ZIP_FILENAME_WITH_CSV,,}.csv já existe, pulando..."
         continue
       fi
 
@@ -69,9 +54,9 @@ unzipFiles() {
       # renomeia o arquivo extraído
       if [ -f "$DIR_CSV/$CSV_FILENAME" ]; then
         mv -f "$DIR_CSV/$CSV_FILENAME" "$DIR_CSV/${ZIP_FILENAME_WITH_CSV,,}.csv"
-        writeLog "✅ Renomeado para: $ZIP_FILENAME_WITH_CSV" "$LOG_NAME_SUCCESS"
+        writeLog "✅ Renomeado para: $ZIP_FILENAME_WITH_CSV"
       else
-        writeLog "❌ Arquivo $CSV_FILENAME não encontrado após unzip" "$LOG_NAME_ERROR"
+        writeLog "❌ Arquivo $CSV_FILENAME não encontrado após unzip"
       fi
     fi
   done
@@ -106,5 +91,5 @@ subscribeFiles
 
 # FIM
 echo "---------------------------------------------------------------------------"
-writeLog "⚠️ Fim do download CSV em $(calculateExecutionTime)" "$LOG_NAME_SUCCESS"
+writeLog "⚠️ Fim do download CSV em $(calculateExecutionTime)"
 echo

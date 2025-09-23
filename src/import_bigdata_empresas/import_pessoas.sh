@@ -6,8 +6,7 @@ CHECK_DB_SCHEMA=true
 CHECK_INDEX_TRIGGER=false
 readonly MODULE_DIR="import_bigdata_empresas"
 readonly ORIGEM="estabelecimentos"
-readonly LOG_NAME_SUCCESS="success_pf_pessoas_import_${DB_SCHEMA_FINAL,,}"
-readonly LOG_NAME_ERROR="error_pf_pessoas_import_${DB_SCHEMA_FINAL,,}"
+LOG_NAME="import_pessoas"
 readonly TABLES=("pf_pessoas")
 
 writeLog "============================================================================================================================="

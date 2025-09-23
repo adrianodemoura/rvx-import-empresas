@@ -3,12 +3,11 @@
 source "./config/config.sh"
 
 # Variáveis do script
+LOG_NAME="import_empresas"
 CHECK_DATABASE_SCHEMA=true
 CHECK_INDEX_TRIGGER_CONSTRAINT=false
 readonly MODULE_DIR="import_bigdata_empresas"
 readonly ORIGEM="estabelecimentos"
-readonly LOG_NAME_SUCCESS="success_import_${DB_SCHEMA,,}"
-readonly LOG_NAME_ERROR="error_import_${DB_SCHEMA,,}"
 readonly TABLES=( "pj_cnaes_list" "pj_empresas_cnaes" "pj_empresas" "pj_empresas_emails" "pj_empresas_enderecos" "pj_empresas_socios" "pj_empresas_telefones" "pj_naturezas_juridicas" "pj_qualificacoes_socios")
 
 writeLog "============================================================================================================================="

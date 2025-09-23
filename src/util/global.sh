@@ -1,7 +1,7 @@
 # função para escrever LOGs
 writeLog() {
   local msg="$1"
-  local type="${2:-${LOG_NAME_SUCCESS:-undefined}}"  # fallback encadeado
+  local type="${2:-${LOG_NAME:-undefined}}"  # fallback encadeado
   local output="${3:-true}"
 
   mkdir -p "$DIR_LOG"
@@ -78,5 +78,36 @@ format_number() {
   else
     printf "%'.0f\n" "$1"
   fi
+}
+
+# Função para descobri o último diretório disponível e sua data
+getLatestDir() {
+  # baixar HTML e colocar tudo em uma linha
+  local HTML
+  HTML=$(curl -s "$URL_BASE" | tr '\n' ' ')
+
+  # pegar todos os diretórios YYYY-MM/ e pegar o último
+  LATEST_DIR=$(echo "$HTML" \
+    | grep -oP 'href="\d{4}-\d{2}/"' \
+    | sed 's/href="//; s/"//g' \
+    | sort \
+    | tail -n1)
+
+  # remover a barra final
+  LATEST_DIR=${LATEST_DIR%/}
+
+  # pegar o <tr> do último diretório
+  local TR_LINE
+  TR_LINE=$(echo "$HTML" | grep -oP "<tr>.*?href=\"$LATEST_DIR/\".*?</tr>")
+
+  # pegar o segundo <td align="right"> (que contém a data) e extrair apenas YYYY-MM-DD
+  # pegar a data correta do último diretório
+  LATEST_DATE=$(echo "$HTML" \
+    | grep -oP "href=\"$LATEST_DIR/\">$LATEST_DIR/.*?align=\"right\">[0-9]{4}-[0-9]{2}-[0-9]{2}" \
+    | grep -oP "[0-9]{4}-[0-9]{2}-[0-9]{2}" \
+    | head -n1)
+
+  export LATEST_DIR
+  export LATEST_DATE
 }
 

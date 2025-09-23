@@ -2,7 +2,7 @@
 # Altera o schema das tabelas de empresa para o bigdata_final
 #
 source "./config/config.sh"
-LOG_NAME_SUCCESS="change_tables_pj_empresas_schemas"
+LOG_NAME_SUCCESS="tables_change_schemas_to_old"
 tables=(pj_cnaes_list pj_qualificacoes_socios pj_empresas pj_empresas_cnaes pj_empresas_emails pj_empresas_enderecos pj_empresas_socios pj_empresas_telefones pj_naturezas_juridicas)
 
 writeLog "============================================================================================================================="

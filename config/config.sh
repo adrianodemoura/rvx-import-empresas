@@ -4,18 +4,26 @@
 # Inicio da contagem do tempo de execução
 START_TIME=$(date +%s%3N)
 
-# Recupera a data de origem
-readonly DATA_ORIGEM=$(cat .data_origem || echo '2025-09-14')
-
 # Carrega as variáveis de ambiente do arquivo .env e .local
 source "./src/util/global.sh"
 loadEnv ".env.local"
+LOG_NAME="${DB_SCHEMA,,}"
 
-#
+# Recupera a data de origem, do arquivo raiz ou do site
+DATA_ORIGEM=$(cat .data_origem 2>/dev/null)
+if [[ ${#DATA_ORIGEM} -eq 0 ]]; then
+  getLatestDir
+  DATA_ORIGEM=$(cat .data_origem 2>/dev/null)
+fi
+if [[ ${#DATA_ORIGEM} -eq 0 ]]; then
+  writeLog "❌ Impossível continuar sem a data de origem!"
+  exit 1
+fi
+
+# Tratamento para CTRL+C
 trap "writeLog '⛔ Cancelado pelo usuário'; kill 0; exit 130" INT TERM
 
 # Atalho para conexão com o banco de dados no servidor de testes
-# PSQL_CMD=(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_DATABASE")
 readonly PSQL_CMD=(
   env
   PGPASSWORD="$DB_PASSWORD"
