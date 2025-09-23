@@ -14,4 +14,3 @@ storage/bkp/*
 !storage/tmp/.empty
 !storage/logs/.empty
 !storage/cache/.empty
-!storage/bkp/.empty
