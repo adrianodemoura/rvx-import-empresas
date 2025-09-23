@@ -9,7 +9,9 @@
 storage/tmp/*
 storage/logs/*
 storage/cache/*
+storage/bkp/*
 
 !storage/tmp/.empty
 !storage/logs/.empty
 !storage/cache/.empty
+!storage/bkp/.empty
