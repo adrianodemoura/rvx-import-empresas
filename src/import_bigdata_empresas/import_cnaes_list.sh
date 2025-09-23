@@ -19,7 +19,7 @@ checkFunctions() {
 
     writeLog "📣 Aguarde a verificação da função \"dblink\" no schema \"$DB_SCHEMA_FINAL\"..."
 
-    OUTPUT=$(PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -t -A -C "$SQL" 2>&1)
+    OUTPUT=$("${PSQL_CMD[@]}" -t -A -C "$SQL" 2>&1)
     if [[ $! -ne 0 ]]; then
         writeLog "❌ Falha ao tentar criar função \"dblink\" no schema $DB_SCHEMA_TMP"
         exit 1
@@ -35,14 +35,14 @@ importPfPessoas() {
     local MAX_RECORDS=$(echo "10.000" | tr -d '.') LIMIT=$(echo "500" | tr -d '.')
 
     # Checa se a tabela está cheia, se sim não prossegue.
-    COUNT=$(PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -t -A -c "SELECT COUNT(1) FROM ${DB_SCHEMA_FINAL}.pj_cnaes_list")
+    COUNT=$("${PSQL_CMD[@]}" -t -A -c "SELECT COUNT(1) FROM ${DB_SCHEMA_FINAL}.pj_cnaes_list")
     if [ "$COUNT" -gt 0 ]; then
         writeLog "❌ Tabela \"${DB_SCHEMA_FINAL}.pj_cnaes_list\" já está populada."
         exit 1
     fi
 
     # Descobre o maior ID do banco origem
-    TOTAL=$(PGPASSWORD="$PROD_DB_PASSWORD" "${PROD_PSQL_CMD[@]}" -t -A -c "SELECT max(id) FROM ${PROD_DB_SCHEMA}.pj_cnaes_list")
+    TOTAL=$("${PROD_PSQL_CMD[@]}" -t -A -c "SELECT max(id) FROM ${PROD_DB_SCHEMA}.pj_cnaes_list")
     writeLog "🔎 Total de registros a importar: $(format_number $TOTAL)"
 
     # Loop até chegar no final

@@ -15,7 +15,16 @@ loadEnv ".env.local"
 trap "writeLog '⛔ Cancelado pelo usuário'; kill 0; exit 130" INT TERM
 
 # Atalho para conexão com o banco de dados no servidor de testes
-PSQL_CMD=(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_DATABASE")
+# PSQL_CMD=(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_DATABASE")
+readonly PSQL_CMD=(
+  env
+  PGPASSWORD="$DB_PASSWORD"
+  psql
+  -h "$DB_HOST"
+  -p "$DB_PORT"
+  -U "$DB_USER"
+  -d "$DB_DATABASE"
+)
 
 # Atalho para conexão com o banco de dados no servidor de produção (somente leitura)
 PROD_PSQL_CMD=(psql -h "$PROD_DB_HOST" -p "$PROD_DB_PORT" -U "$PROD_DB_USER" -d "$PROD_DB_DATABASE")

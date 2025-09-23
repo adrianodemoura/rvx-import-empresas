@@ -12,7 +12,7 @@ readonly LOG_NAME_ERROR="error_import_${DB_SCHEMA,,}"
 readonly TABLES=( "pj_cnaes_list" "pj_empresas_cnaes" "pj_empresas" "pj_empresas_emails" "pj_empresas_enderecos" "pj_empresas_socios" "pj_empresas_telefones" "pj_naturezas_juridicas" "pj_qualificacoes_socios")
 
 writeLog "============================================================================================================================="
-writeLog "✅ [$(date +'%Y-%m-%d %H:%M:%S.%3N')] Iniciando a importação de tabelas para o Banco de Dados \"$DB_DATABASE\" e o Schema \"$DB_SCHEMA\""
+writeLog "✅ Iniciando a importação de tabelas para o Banco de Dados \"$DB_DATABASE\" e o Schema \"$DB_SCHEMA\""
 
 carregarSQL() {
   local SQL_FILE=$1
@@ -64,14 +64,14 @@ checkIndexTriggerConstraint() {
 
 importTable() {
   local MAX_RECORDS=$(echo "1.000.000.000" | tr -d '.') LIMIT=$(echo "1.000.000" | tr -d '.')
-  # local MAX_RECORDS=$(echo "1.000" | tr -d '.') LIMIT=$(echo "100" | tr -d '.')  
   local LAST_ID=0 IMPORTED=0
   local OUTPUT START_TIME_IMPORT SQL LAST_ID_ROW
   local TABLE_IMPORT="$1"
   local SQL_FILE="./src/$MODULE_DIR/sqls/$2.sql"
 
   # Verifica se já tem algo na tabela
-  OUTPUT=$(PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -t -A -c "SELECT EXISTS(SELECT 1 FROM $DB_SCHEMA.${TABLE_IMPORT})")
+  writeLog "📣 Verificando se a tabela possui dados..."
+  OUTPUT=$("${PSQL_CMD[@]}" -t -A -c "SELECT EXISTS(SELECT 1 FROM $DB_SCHEMA.${TABLE_IMPORT})")
   if [ "$OUTPUT" = "t" ]; then
     writeLog "📣 A Tabela \"$DB_SCHEMA.$TABLE_IMPORT\" já possui registros, importação ignorada."
     return
@@ -85,7 +85,7 @@ importTable() {
     SQL=$(carregarSQL "$SQL_FILE" "$LAST_ID" "$LIMIT")
 
     # Executa a SQL de importação
-    OUTPUT=$(PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -t -A -c "$SQL" 2>&1)
+    OUTPUT=$("${PSQL_CMD[@]}" -t -A -c "$SQL" 2>&1)
     if [[ $? -ne 0 ]]; then
       writeLog "❌ Erro ao popular \"$DB_SCHEMA.$TABLE_IMPORT\": $(echo "$OUTPUT" | tr -d '\n')" "$LOG_NAME_ERROR"
       exit 1
@@ -125,5 +125,5 @@ checkIndexTriggerConstraint
 
 # FIM
 echo "---------------------------------------------------------------------------"
-writeLog "✅ [$(date +'%Y-%m-%d %H:%M:%S.%3N')] Importação de tabelas para o Schema \"$DB_SCHEMA\" finalizada em $(calculateExecutionTime)"
+writeLog "✅ Importação de tabelas para o Schema \"$DB_SCHEMA\" finalizada em $(calculateExecutionTime)"
 echo

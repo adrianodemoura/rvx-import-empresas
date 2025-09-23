@@ -11,7 +11,7 @@ readonly LOG_NAME_ERROR="error_csv_import_${DB_SCHEMA_TMP,,}"
 readonly TABLES=("naturezas" "municipios" "paises" "motivos" "qualificacoes" "cnaes" "empresas" "socios" "simples" "estabelecimentos")
 
 writeLog "============================================================================================================================="
-writeLog "✅ [$(date +'%Y-%m-%d %H:%M:%S.%3N')] Iniciando a importação CSV para as tabelas do Banco de Dados \"$DB_DATABASE\" e o Schema \"$DB_SCHEMA\""
+writeLog "✅ Iniciando a importação CSV para as tabelas do Banco de Dados \"$DB_DATABASE\" e o Schema \"$DB_SCHEMA\""
 
 # Campos e quantidade de colunas por tabela
 declare -A TABLE_FIELDS=(
@@ -30,6 +30,14 @@ declare -A TABLE_FIELDS=(
 checkDbSchema() {
   [ "$CHECK_DB_SCHEMA" != true ] && return
 
+  writeLog "🔍 Removendo o schema '$DB_SCHEMA_TMP' se existir..."
+  OUTPUT=$("${PSQL_CMD[@]}" -c "DROP SCHEMA IF EXISTS $DB_SCHEMA_TMP CASCADE;" 2>&1)
+  if [[ $? -ne 0 ]]; then
+      writeLog "❌ Erro ao remover o schema '$DB_SCHEMA_TMP': $(echo "$OUTPUT" | tr -d '\n')"
+      exit 1
+  fi
+  echo
+
   source "./src/util/database/check_db.sh" "$DB_SCHEMA_TMP"
   source "./src/util/database/check_tables.sh" "$DB_SCHEMA_TMP"
   echo
@@ -40,7 +48,6 @@ checkIndexTrigger() {
 
   source "./src/util/database/check_indexes.sh" "$DB_SCHEMA_TMP"
   source "./src/util/database/check_triggers.sh" "$DB_SCHEMA_TMP"
-  echo
 }
 
 checkDbSchema
@@ -73,7 +80,7 @@ importTable() {
   for part_file in "${part_files[@]}"; do
     # Captura saída de erro do psql
     local TOTAL_IMPORT
-    if TOTAL_IMPORT=$(PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_DATABASE" \
+    if TOTAL_IMPORT=$("${PSQL_CMD[@]}" \
         -c "\copy $DB_SCHEMA_TMP.$TABLE_NAME($fields) \
         FROM '$part_file' WITH (FORMAT csv, HEADER false, DELIMITER ';', ENCODING 'LATIN1')" 2>&1); then
 
@@ -103,7 +110,6 @@ loopTables() {
 loopTables
 
 checkIndexTrigger
-echo
 
 # FIM
 echo "---------------------------------------------------------------------------"

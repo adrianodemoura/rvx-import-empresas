@@ -7,7 +7,7 @@ fi
 DB_SCHEMA="$1"
 
 writeLog "📣 Verificando conexão com o Banco de Dados \"$DB_DATABASE\"..."
-ERROR_MSG=$(PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -c '\q' 2>&1)
+ERROR_MSG=$("${PSQL_CMD[@]}" -c '\q' 2>&1)
 if [ $? -eq 0 ]; then
   writeLog "✅ Conexão bem-sucedida com o Banco de Dados \"$DB_DATABASE\"."
 else
@@ -18,11 +18,11 @@ echo
 
 writeLog "📣 Verificando o Schema \"$DB_SCHEMA\"..."
 SCHEMA_CHECK="SELECT schema_name FROM information_schema.schemata WHERE schema_name = '$DB_SCHEMA';"
-SCHEMA_EXISTS=$(PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -c "$SCHEMA_CHECK" -t -A)
+SCHEMA_EXISTS=$("${PSQL_CMD[@]}" -c "$SCHEMA_CHECK" -t -A)
 if [[ -n "$SCHEMA_EXISTS" ]]; then
     writeLog "✅ Conexão bem-sucedida com o SCHEMA \"$DB_SCHEMA\"."
 else
-    OUTPUT=$(PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -c "CREATE SCHEMA ${DB_SCHEMA};" 2>/dev/null)
+    OUTPUT=$("${PSQL_CMD[@]}" -c "CREATE SCHEMA ${DB_SCHEMA};" 2>/dev/null)
     if [ $? -eq 0 ]; then
         writeLog "✅ SCHEMA \"$DB_SCHEMA\" criado com sucesso."
     else
