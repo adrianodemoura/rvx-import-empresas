@@ -1,3 +1,23 @@
+: Como alterar o schema de uma tabela ?
+ALTER TABLE bigdata_empresas.pj_cnaes_list SET SCHEMA "bigdata_final";
+* altera o schema da tabela `pj_cnaes_list` de `bigdata_empresas` para `bigdata_final`.
+
+: Como ver as tabelas do banco.schema ?
+$ docker exec -t postgres-db psql -U postgres -d rvx-bigdata -c '\dt bigdata_final.*'
+
+: Como fazer transferências de tabelas de um schema para outro schema ?
+$ docker exec -t postgres-db pg_dump -U postgres -d rvx-bigdata -n bigdata_empresas -Fc -f /var/lib/postgresql/data/dump_bigdata_empresas.backup
+para restaurar
+$ docker exec -t postgres-db pg_restore -U postgres -d rvx-bigdata -n bigdata_final /var/lib/postgresql/data/dump_bigdata_empresas.backup
+
+: Como fazer backup de uma tabela ?
+$ pg_dump -h 127.0.0.1 -p 5454 -U postgres -d rvx-bigdata --table=bigdata_final.pf_telefones -Fc -f pf_telefones.pg_dump
+para restaura
+$ pg_restore -h 127.0.0.1 -p 5432 -U postgres -d rvx-bigdata pf_telefones.dump
+* A opção "-Fc" usa o formato "Custom Format" (compactação binária), usa ZLIB para compactação intermediária.
+* A opção "-Fp" usa o formato sql puro.
+* é possível acrescentar mais um nível de compactação usando o GZIP
+
 : Como exportar a tabela "pj_empresas_socios" ?
 $ docker exec -t postgres-db pg_dump -U postgres -d rvx-bigdata -t bigdata_empresas.pj_empresas_socios | gzip > pj_empresas_socios.sql.gz
 
@@ -71,7 +91,7 @@ $ head -n 1000 arquivo_grande.txt > arquivo_mil_linhas.txt
 $ sed 's/\x0//g' estabelecimentos9.csv > estabelecimentos9.tmp && mv estabelecimentos9.tmp estabelecimentos9.csv
 
 : Quais os ícones bonitinhos ?
-❌ ✅ 🛑 📁 📊 ⚠️ 📣 📋 🔗 📄 📥 ⌛ ⏰ ⏱ 🚀 🟢 ⚡ 🔄 💡 😎 😄 👉 🔎 📶 🗄 🏛 🗃 🏹 🔔 ↑ 🏁 🗜️ ⬇️ 🌐 📸 🕵️‍♂️ 👍
+❌ ✅ ❎ 🛑 📁 📊 ⚠️ 📣 📋 🔗 📄 📥 ⌛ ⏰ ⏱ 🚀 🟢 ⚡ 🔄 💡 😎 😄 👉 🔎 📶 🗄 🏛 🗃 🏹 🔔 ↑ 🏁 🗜️ ⬇️ 🌐 📸 🕵️‍♂️ 👍
 
 : Como pegar as últimas linhas de um arquivo ?
 $ tail -n 10 arquivo
