@@ -22,7 +22,7 @@ carregarSQL() {
 
   if [[ -f "$SQL_FILE" ]]; then
     SQL=$(<$SQL_FILE)
-    SQL="${SQL//\$DB_SCHEMA_PESSOAS/$DB_SCHEMA_PESSOAS}"
+    SQL="${SQL//\$DB_SCHEMA_FINAL/$DB_SCHEMA_FINAL}"
     SQL="${SQL//\$DB_SCHEMA_TMP/$DB_SCHEMA_TMP}"
     SQL="${SQL//\$DB_SCHEMA/$DB_SCHEMA}"
     SQL="${SQL//\$DATA_ORIGEM/$DATA_ORIGEM}"

@@ -29,7 +29,7 @@ WITH inseridos AS (
     LEFT JOIN $DB_SCHEMA_TMP.paises p ON p.codigo = o.pais
     LEFT JOIN $DB_SCHEMA_TMP.qualificacoes q ON q.codigo = o.qualificacao_socio
     LEFT JOIN $DB_SCHEMA_TMP.qualificacoes q2 ON q2.codigo = o.qualificacao_representante_legal
-    LEFT JOIN $DB_SCHEMA_PESSOAS.pf_pessoas pp 
+    LEFT JOIN $DB_SCHEMA_FINAL.pf_pessoas pp 
       ON  pp.cpf_basico = o.cnpj_cpf_socio
       AND pp.nome = o.nome_socio
     WHERE o.id > $LAST_ID

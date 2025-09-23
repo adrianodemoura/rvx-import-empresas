@@ -6,18 +6,18 @@ CHECK_DB_SCHEMA=true
 CHECK_INDEX_TRIGGER=false
 readonly MODULE_DIR="import_bigdata_empresas"
 readonly ORIGEM="estabelecimentos"
-readonly LOG_NAME_SUCCESS="success_pj_cnaes_list_import_${DB_SCHEMA_PESSOAS,,}"
-readonly LOG_NAME_ERROR="error_pj_cnaes_list_import_${DB_SCHEMA_PESSOAS,,}"
+readonly LOG_NAME_SUCCESS="success_pj_cnaes_list_import_${DB_SCHEMA_FINAL,,}"
+readonly LOG_NAME_ERROR="error_pj_cnaes_list_import_${DB_SCHEMA_FINAL,,}"
 readonly TABLES=("pj_cnaes_list")
 
 writeLog "============================================================================================================================="
-writeLog "✅ [$(date +'%Y-%m-%d %H:%M:%S.%3N')] Iniciando a importação de CnaesList para o Banco de Dados \"$DB_DATABASE\" e o Schema \"$DB_SCHEMA_PESSOAS\""
+writeLog "✅ [$(date +'%Y-%m-%d %H:%M:%S.%3N')] Iniciando a importação de CnaesList para o Banco de Dados \"$DB_DATABASE\" e o Schema \"$DB_SCHEMA_FINAL\""
 
 checkFunctions() {
     local OUTPUT
     local SQL="CREATE EXTENSION IF NOT EXISTS dblink SCHEMA $DB_SCHEMA_TMP;"
 
-    writeLog "📣 Aguarde a verificação da função \"dblink\" no schema \"$DB_SCHEMA_PESSOAS\"..."
+    writeLog "📣 Aguarde a verificação da função \"dblink\" no schema \"$DB_SCHEMA_FINAL\"..."
 
     OUTPUT=$(PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -t -A -C "$SQL" 2>&1)
     if [[ $! -ne 0 ]]; then
@@ -35,9 +35,9 @@ importPfPessoas() {
     local MAX_RECORDS=$(echo "10.000" | tr -d '.') LIMIT=$(echo "500" | tr -d '.')
 
     # Checa se a tabela está cheia, se sim não prossegue.
-    COUNT=$(PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -t -A -c "SELECT COUNT(1) FROM ${DB_SCHEMA_PESSOAS}.pj_cnaes_list")
+    COUNT=$(PGPASSWORD="$DB_PASSWORD" "${PSQL_CMD[@]}" -t -A -c "SELECT COUNT(1) FROM ${DB_SCHEMA_FINAL}.pj_cnaes_list")
     if [ "$COUNT" -gt 0 ]; then
-        writeLog "❌ Tabela \"${DB_SCHEMA_PESSOAS}.pj_cnaes_list\" já está populada."
+        writeLog "❌ Tabela \"${DB_SCHEMA_FINAL}.pj_cnaes_list\" já está populada."
         exit 1
     fi
 
@@ -46,14 +46,14 @@ importPfPessoas() {
     writeLog "🔎 Total de registros a importar: $(format_number $TOTAL)"
 
     # Loop até chegar no final
-    writeLog "🔎 Aguarde a Importação de \"$PROD_DB_HOST.$PROD_DB_SCHEMA.pj_cnaes_list\" para \"$DB_HOST.$DB_SCHEMA_PESSOAS.pj_cnaes_list\"..."
+    writeLog "🔎 Aguarde a Importação de \"$PROD_DB_HOST.$PROD_DB_SCHEMA.pj_cnaes_list\" para \"$DB_HOST.$DB_SCHEMA_FINAL.pj_cnaes_list\"..."
     TOTAL_IMPORTED=0
     for ((i=0; i<=MAX_RECORDS; i+=$LIMIT))
     do
         START_TIME_IMPORT=$(date +%s%3N)
 
         OUTPUT=$(docker exec -e PGPASSWORD="$PROD_DB_PASSWORD" postgres-db psql -U $DB_USER -d $DB_DATABASE -t -A -c \
-            "INSERT INTO $DB_SCHEMA_PESSOAS.pj_cnaes_list (id, codigo, name)
+            "INSERT INTO $DB_SCHEMA_FINAL.pj_cnaes_list (id, codigo, name)
               SELECT id, codigo, name
               FROM $DB_SCHEMA_TMP.dblink(
                   'dbname=$PROD_DB_DATABASE port=$PROD_DB_PORT host=$PROD_DB_HOST user=$PROD_DB_USER password=$PROD_DB_PASSWORD',
@@ -76,24 +76,24 @@ importPfPessoas() {
 }
 
 # checa banco de dados e schema
-source "./src/util/database/check_db.sh" "$DB_SCHEMA_PESSOAS"
+source "./src/util/database/check_db.sh" "$DB_SCHEMA_FINAL"
 
 # checa as funções
 checkFunctions
 
 # Checa a tabela pf_pessoas
-source "./src/util/database/check_tables.sh" "$DB_SCHEMA_PESSOAS"
+source "./src/util/database/check_tables.sh" "$DB_SCHEMA_FINAL"
 
 # Importa os Sócios do banco BigDATA
 importPfPessoas
 
 # Checa índices
-source "./src/util/database/check_indexes.sh" "$DB_SCHEMA_PESSOAS"
-source "./src/util/database/check_triggers.sh" "$DB_SCHEMA_PESSOAS"
-source "./src/util/database/check_constraints.sh" "$DB_SCHEMA_PESSOAS"
+source "./src/util/database/check_indexes.sh" "$DB_SCHEMA_FINAL"
+source "./src/util/database/check_triggers.sh" "$DB_SCHEMA_FINAL"
+source "./src/util/database/check_constraints.sh" "$DB_SCHEMA_FINAL"
 
 # FIM
 echo
 echo "---------------------------------------------------------------------------"
-writeLog "✅ Fim da importação Pessoas para \"$DB_SCHEMA_PESSOAS.pj_cnaes_list\" em $(calculateExecutionTime)"
+writeLog "✅ Fim da importação Pessoas para \"$DB_SCHEMA_FINAL.pj_cnaes_list\" em $(calculateExecutionTime)"
 echo
