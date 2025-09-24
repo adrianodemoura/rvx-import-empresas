@@ -10,7 +10,7 @@ LOG_NAME="import_pessoas"
 readonly TABLES=("pf_pessoas")
 
 writeLog "============================================================================================================================="
-writeLog "✅ [$(date +'%Y-%m-%d %H:%M:%S.%3N')] Iniciando a importação de Pessoas para o Banco de Dados \"$DB_DATABASE\" e o Schema \"$DB_SCHEMA_FINAL\""
+writeLog "✅ Iniciando a importação de Pessoas para o Banco de Dados \"$DB_DATABASE\" e o Schema \"$DB_SCHEMA_FINAL\""
 
 checkFunctions() {
     local OUTPUT
@@ -70,21 +70,21 @@ importPfPessoas() {
 }
 
 # checa banco de dados e schema
-source "./src/util/database/check_db.sh" "$DB_SCHEMA_FINAL"
+# source "./src/util/database/check_db.sh" "$DB_SCHEMA_FINAL"
 
 # checa as funções
-checkFunctions
+# checkFunctions
 
 # Checa a tabela pf_pessoas
-source "./src/util/database/check_tables.sh" "$DB_SCHEMA_FINAL"
+# source "./src/util/database/check_tables.sh" "$DB_SCHEMA_FINAL"
 
 # Importa os Sócios do banco BigDATA
-importPfPessoas
+# importPfPessoas
 
 # Checa índices, triggers e constraints
-source "./src/util/database/check_indexes.sh" "$DB_SCHEMA_FINAL"
-source "./src/util/database/check_triggers.sh" "$DB_SCHEMA_FINAL"
-source "./src/util/database/check_constraints.sh" "$DB_SCHEMA_FINAL"
+# source "./src/util/database/check_indexes.sh" "$DB_SCHEMA_FINAL"
+# source "./src/util/database/check_triggers.sh" "$DB_SCHEMA_FINAL"
+# source "./src/util/database/check_constraints.sh" "$DB_SCHEMA_FINAL"
 
 # FIM
 echo
