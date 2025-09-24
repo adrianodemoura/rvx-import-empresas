@@ -128,6 +128,7 @@ local:
 171.975.929 - empresas_cnaes
 179.163.131 - pj_empresas_cnaes
  67.640.763 - pj_empresas_enderecos
+ 26.397.253 - pj_empresas_socios (1.382.627 is null)
  67.125.899 - estabelecimentos
  67.640.763 - pj_empresas
  44.584.423 - simples
