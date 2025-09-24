@@ -33,6 +33,3 @@ readonly PSQL_CMD=(
   -U "$DB_USER"
   -d "$DB_DATABASE"
 )
-
-# Atalho para conexão com o banco de dados no servidor de produção (somente leitura)
-PROD_PSQL_CMD=(psql -h "$PROD_DB_HOST" -p "$PROD_DB_PORT" -U "$PROD_DB_USER" -d "$PROD_DB_DATABASE")
