@@ -10,7 +10,7 @@ readonly ORIGEM="estabelecimentos"
 readonly TABLES=("pf_pessoas")
 
 writeLog "============================================================================================================================="
-writeLog "✅ Iniciando a importação de Pessoas para o Banco de Dados \"$POSTGRES_DB_DATABASE\" e o Schema \"$POSTGRES_DB_SCHEMA_FINAL\""
+writeLog "✅ Iniciando a importação de Pessoas para o Banco de Dados '$POSTGRES_DB_DATABASE' e o Schema '$POSTGRES_DB_SCHEMA_FINAL'"
 
 checkFunctions() {
     local OUTPUT
@@ -30,8 +30,8 @@ checkFunctions() {
 
 importPfPessoas() {
     local START_TIME_IMPORT START_ID=1 END_ID=$BATCH_SIZE TOTAL TOTAL_IMPORTED OUTPUT ROWS_AFFECTED COUNT
-    # local MAX_RECORDS=$(echo "1.000.000.000" | tr -d '.') LIMIT=$(echo "10.000.000" | tr -d '.') END_ID=$(echo "1.000.000" | tr -d '.')
-    local MAX_RECORDS=$(echo "1.000" | tr -d '.') LIMIT=$(echo "100" | tr -d '.')
+    local MAX_RECORDS=$(echo "1.000.000.000" | tr -d '.') LIMIT=$(echo "10.000.000" | tr -d '.') END_ID=$(echo "1.000.000" | tr -d '.')
+    # local MAX_RECORDS=$(echo "1.000" | tr -d '.') LIMIT=$(echo "100" | tr -d '.')
 
     # Checa se a tabela está cheia, se sim não prossegue.
     COUNT=$("${PSQL_CMD[@]}" -t -A -c "SELECT COUNT(1) FROM ${POSTGRES_DB_SCHEMA_FINAL}.pf_pessoas")
