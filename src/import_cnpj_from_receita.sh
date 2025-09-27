@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+# Importa as empresas da receita para o banco bigdata
 #
 source "./config/config.sh"
 

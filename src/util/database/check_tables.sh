@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ -z "$1" ]]; then
-    writeLog "❌ Erro: O parâmetro 'Schema' é obrigatório!" "$LOG_NAME_ERROR"
+    writeLog "❌ Erro: O parâmetro 'Schema' é obrigatório!"
     exit 1
 fi
 DB_SCHEMA="$1"
@@ -24,14 +24,14 @@ for LINE in "${TABLES[@]}"; do
 
             OUTPUT=$("${PSQL_CMD[@]}" -c "$SQL" 2>&1)
             if [ $? -ne 0 ]; then
-                writeLog "❌ Erro: Não foi possível criar a Tabela \"$TABLE\"." "$LOG_NAME_ERROR"
+                writeLog "❌ Erro: Não foi possível criar a Tabela \"$TABLE\"."
                 writeLog "Mensagem de erro: $OUTPUT" "$LOG_NAME_ERROR"
                 exit 1
             else
-                writeLog "✅ Tabela \"$TABLE\" CRIADA com sucesso." "$LOG_NAME_SUCCESS"
+                writeLog "✅ Tabela \"$TABLE\" CRIADA com sucesso."
             fi
         else
-            writeLog "🗃  Arquivo de migração NÃO encontrado para a tabela \"$TABLE\". $MIGRATION_FILE" "$LOG_NAME_ERROR"
+            writeLog "🗃  Arquivo de migração NÃO encontrado para a tabela \"$TABLE\". $MIGRATION_FILE"
             exit 1
         fi
     fi

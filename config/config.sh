@@ -26,10 +26,20 @@ trap "writeLog '⛔ Cancelado pelo usuário'; kill 0; exit 130" INT TERM
 # Atalho para conexão com o banco de dados no servidor de testes
 readonly PSQL_CMD=(
   env
-  PGPASSWORD="$DB_PASSWORD"
+  PGPASSWORD="$POSTGRES_DB_PASSWORD"
   psql
-  -h "$DB_HOST"
-  -p "$DB_PORT"
-  -U "$DB_USER"
-  -d "$DB_DATABASE"
+  -h "$POSTGRES_DB_HOST"
+  -p "$POSTGRES_DB_PORT"
+  -U "$POSTGRES_DB_USER"
+  -d "$POSTGRES_DB_DATABASE"
+)
+
+# Atalho para conexão com o MongoDB
+readonly MONGO_CMD=(
+  mongo
+  --host "$MONGODB_HOST"
+  --port "$MONGODB_PORT"
+  -u "$MONGODB_USER"
+  -p "$MONGODB_PASSWORD"
+  "$MONGODB_DATABASE"
 )

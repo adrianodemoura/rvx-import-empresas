@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ -z "$1" ]]; then
-    writeLog "❌ Erro: O parâmetro SCHEMA é obrigatório!" "$LOG_NAME_ERROR"
+    writeLog "❌ Erro: O parâmetro SCHEMA é obrigatório!"
     exit 1
 fi
 DB_SCHEMA="$1"
@@ -12,19 +12,19 @@ if [[ -f "$CONSTRAINTS_MIGRATION_FILE" ]]; then
     SQL=$(<"$CONSTRAINTS_MIGRATION_FILE")
     SQL="${SQL//\{schema\}/$DB_SCHEMA}"
 
-    ERROR=$(PGPASSWORD="$DB_PASSWORD" psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_DATABASE -c "$SQL" 2>&1)
+    ERROR=$(PGPASSWORD="$POSTGRES_DB_PASSWORD" psql -h $POSTGRES_DB_HOST -p $POSTGRES_DB_PORT -U $POSTGRES_DB_USER -d $POSTGRES_DB_DATABASE -c "$SQL" 2>&1)
     if [[ $? -eq 0 ]]; then
-        writeLog "✅ Constraints criadas com sucesso." "$LOG_NAME_SUCCESS"
+        writeLog "✅ Constraints criadas com sucesso."
     else
         if [[ $ERROR == *"already exists"* ]]; then
-            writeLog "📣 Algumas constraints já existiam e não foram recriadas." "$LOG_NAME_SUCCESS"
+            writeLog "📣 Algumas constraints já existiam e não foram recriadas."
         else
-            writeLog "Erro ao criar constraint: $ERROR" "$LOG_NAME_ERROR"
+            writeLog "Erro ao criar constraint: $ERROR"
             exit 1
         fi
     fi
 else
-    writeLog "🗄 Arquivo de migração para criação de constraints não encontrado: $CONSTRAINTS_MIGRATION_FILE" "$LOG_NAME_ERROR"
+    writeLog "🗄 Arquivo de migração para criação de constraints não encontrado: $CONSTRAINTS_MIGRATION_FILE"
     exit 1
 fi
 echo

@@ -27,7 +27,7 @@ BEGIN
     -- pj_empresas_socios
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='{schema}' AND table_name='pj_empresas_socios') THEN
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'pkey_pj_empresas_socios' AND conrelid = '{schema}.pj_empresas_socios'::regclass) THEN
-            ALTER TABLE IF EXISTS {schema}.pj_empresas ADD CONSTRAINT pkey_pj_empresas_socios PRIMARY KEY (id);
+            ALTER TABLE IF EXISTS {schema}.pj_empresas_socios ADD CONSTRAINT pkey_pj_empresas_socios PRIMARY KEY (id);
         END IF;
     END IF;
 

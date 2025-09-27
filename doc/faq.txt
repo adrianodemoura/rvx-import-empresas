@@ -83,7 +83,6 @@ $ docker exec -it postgres-db cat /var/lib/postgresql/data/pgdata/postgresql.con
 $ sed -n '1,1000p' arquivo_grande.txt > arquivo_mil_linhas.txt
 * é bom para arquivos com vários GIGAS, pois ele não joga tudo na memória.
 
-ou
 $ head -n 1000 arquivo_grande.txt > arquivo_mil_linhas.txt
 * melhor o sed
 
@@ -91,7 +90,7 @@ $ head -n 1000 arquivo_grande.txt > arquivo_mil_linhas.txt
 $ sed 's/\x0//g' estabelecimentos9.csv > estabelecimentos9.tmp && mv estabelecimentos9.tmp estabelecimentos9.csv
 
 : Quais os ícones bonitinhos ?
-❌ ✅ ❎ 🛑 📁 📊 ⚠️ 📣 📋 🔗 📄 📥 ⌛ ⏰ ⏱ 🚀 🟢 ⚡ 🔄 💡 😎 😄 👉 🔎 📶 🗄 🏛 🗃 🏹 🔔 ↑ 🏁 🗜️ ⬇️ 🌐 📸 🕵️‍♂️ 👍
+❌ ✅ ❎ 🛑 📁 📊 ⚠️ 📣 📋 🔗 📄 📥 ⌛ ⏰ ⏱ 🚀 🟢 ⚡ 🔄 💡 😎 😄 👉 🔎 📶 🗄 🏛 🗃 🏹 🔔 ↑ 🏁 🗜️ ⬇️ 🌐 📸 🕵️‍♂️ 👍 🐘 🍃
 
 : Como pegar as últimas linhas de um arquivo ?
 $ tail -n 10 arquivo
