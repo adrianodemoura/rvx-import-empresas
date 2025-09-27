@@ -61,4 +61,16 @@ BEGIN
         CREATE INDEX IF NOT EXISTS idx_pf_pessoas_nome ON {schema}.pf_pessoas USING btree (nome);
         CREATE INDEX IF NOT EXISTS idx_pf_pessoas_cpf_basico ON {schema}.pf_pessoas USING btree (cpf_basico);
     END IF;
+
+    -- pf_telefones
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='{schema}' AND table_name='pf_telefones') THEN
+        CREATE INDEX IF NOT EXISTS idx_pf_telefones_cpf ON {schema}.pf_telefones USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_telefones_status ON {schema}.pf_telefones USING btree (status);
+    END IF;
+
+    -- pf_emails
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='{schema}' AND table_name='pf_emails') THEN
+        CREATE INDEX IF NOT EXISTS idx_pf_emails_cpf ON {schema}.pf_emails USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_emails_email ON {schema}.pf_emails USING btree (email);
+    END IF;
 END $$;

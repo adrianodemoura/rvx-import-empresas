@@ -6,7 +6,7 @@ if [[ -z "$1" ]]; then
 fi
 DB_SCHEMA="$1"
  
-echo "📣 Verificando constraints no SCHEMA \"$DB_SCHEMA\"..."
+writeLog "📣 Verificando constraints no SCHEMA \"$DB_SCHEMA\"..."
 CONSTRAINTS_MIGRATION_FILE="./src/$MODULE_DIR/sqls/create_all_constraints.sql"
 if [[ -f "$CONSTRAINTS_MIGRATION_FILE" ]]; then
     SQL=$(<"$CONSTRAINTS_MIGRATION_FILE")

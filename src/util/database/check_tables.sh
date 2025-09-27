@@ -36,3 +36,4 @@ for LINE in "${TABLES[@]}"; do
         fi
     fi
 done
+echo

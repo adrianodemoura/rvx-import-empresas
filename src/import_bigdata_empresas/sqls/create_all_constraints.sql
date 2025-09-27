@@ -51,4 +51,18 @@ BEGIN
             ALTER TABLE IF EXISTS {schema}.pf_pessoas ADD CONSTRAINT pkey_pf_pessoas PRIMARY KEY (id);
         END IF;
     END IF;
+
+    -- pf_telefones
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='{schema}' AND table_name='pf_telefones') THEN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'pkey_pf_telefones' AND conrelid = '{schema}.pf_telefones'::regclass) THEN
+            ALTER TABLE IF EXISTS {schema}.pf_telefones ADD CONSTRAINT pkey_pf_telefones PRIMARY KEY (id);
+        END IF;
+    END IF;
+
+    -- pf_emails
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='{schema}' AND table_name='pf_emails') THEN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'pkey_pf_emails' AND conrelid = '{schema}.pf_emails'::regclass) THEN
+            ALTER TABLE IF EXISTS {schema}.pf_emails ADD CONSTRAINT pkey_pf_emails PRIMARY KEY (id);
+        END IF;
+    END IF;
 END $$;

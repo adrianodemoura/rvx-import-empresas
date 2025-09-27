@@ -14,7 +14,7 @@ SELECT indexname FROM pg_indexes WHERE tablename = 'pf_pessoas' AND schemaname =
 SELECT conname FROM pg_constraint WHERE conrelid = 'bigdata_final.pf_pessoas'::regclass;
 
 -- pf_pessoas
-SELECT COUNT(1) FROM bigdata_final.pf_pessoas;
+SELECT replace(to_char(COUNT(1), 'FM999G999G999'), ',', '.') FROM bigdata_final.pf_pessoas;
 SELECT * 
 	FROM bigdata_final.pf_pessoas pp
 	WHERE pp.ID=15257691
