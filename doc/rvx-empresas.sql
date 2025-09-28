@@ -31,6 +31,9 @@ SELECT COUNT(1) AS total, pp.id
 	FROM bigdata_final.pf_pessoas pp
 	GROUP BY pp.id
 	HAVING count(1) > 1;
+SELECT 1 FROM pg_constraint 
+	WHERE conname = 'pkey_pf_emails' 
+	AND conrelid = 'bigdata_final.pf_emails'::regclass;
 
 -- pj_qualificacoes_socios
 SELECT * FROM tmp_bigdata.pj_qualificacoes_socios q LIMIT 101;

@@ -26,18 +26,7 @@ replicateTable() {
 
         # Exporta e envia direto pro mongoimport dentro do container
         "${PSQL_CMD[@]}" -c "\copy ($SQL_PF) TO STDOUT WITH CSV HEADER" | \
-        docker exec -i $MONGO_CONTAINER mongoimport \
-            --host "$MONGODB_HOST" \
-            --port "$MONGODB_PORT" \
-            --username "$MONGODB_USER" \
-            --password "$MONGODB_PASSWORD" \
-            --authenticationDatabase "$MONGODB_DATABASE" \
-            --db "$MONGODB_DATABASE" \
-            --collection "$collection" \
-            --type csv \
-            --headerline \
-            --mode upsert > /dev/null 2>&1
-
+            "${MONGOIMPORT_CMD[@]}" --collection "$collection" --type csv --headerline --mode upsert > /dev/null 2>&1
         if [[ $? -ne 0 ]]; then
             writeLog "❌ Erro ao importar lote OFFSET $offset da tabela '$table'. Abortando..."
             exit 1
@@ -51,15 +40,9 @@ replicateTable() {
         fi
     done
 
-    # Total de documentos na collection no MongoDB
-    TOTAL_DOCS=$(docker exec -i $MONGO_CONTAINER mongosh \
-        --quiet \
-        --username "$MONGODB_USER" \
-        --password "$MONGODB_PASSWORD" \
-        --authenticationDatabase "$MONGODB_DATABASE" \
-        "$MONGODB_DATABASE" \
-        --eval "db.getCollection('$collection').countDocuments()")
-    writeLog "ℹ️ Total de documentos na collection '$collection': $(format_number $TOTAL_DOCS)"
+    TOTAL_DOCS=$("${MONGO_CMD[@]}" --eval "db.getCollection('$collection').countDocuments()")
+
+    writeLog "🏁 Total de documentos na collection '$collection': $(format_number $TOTAL_DOCS)"
 
     # FIM
     writeLog "✅ Tabela '$table' replicada com sucesso com '$(format_number $offset)' linhas em $(calculateExecutionTime)"

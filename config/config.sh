@@ -23,8 +23,6 @@ fi
 # Atalho para conexão com o banco de dados no servidor de testes
 readonly PSQL_CMD=(
   docker exec -i $POSTGRES_CONTAINER psql
-  -h "$POSTGRES_DB_HOST"
-  -p "$POSTGRES_DB_PORT"
   -U "$POSTGRES_DB_USER"
   -d "$POSTGRES_DB_DATABASE"
   -v PGPASSWORD="$POSTGRES_DB_PASSWORD"
@@ -33,6 +31,7 @@ readonly PSQL_CMD=(
 # Atalho para conexão com o MongoDB (dentro do container)
 readonly MONGO_CMD=(
   docker exec -i $MONGO_CONTAINER mongosh
+  --quiet
   --host "$MONGODB_HOST"
   --port "$MONGODB_PORT"
   -u "$MONGODB_USER"
@@ -40,11 +39,13 @@ readonly MONGO_CMD=(
   "$MONGODB_DATABASE"
 )
 
+# Atalho para conexão com o MongoDB Import (dentro do container)
 readonly MONGOIMPORT_CMD=(
   docker exec -i $MONGO_CONTAINER mongoimport
+  --quiet
   --host "$MONGODB_HOST"
   --port "$MONGODB_PORT"
-  --username "$MONGODB_USER"
-  --password "$MONGODB_PASSWORD"
-  --authenticationDatabase "$MONGODB_DATABASE"
+  -u "$MONGODB_USER"
+  -p "$MONGODB_PASSWORD"
+  --db "$MONGODB_DATABASE"
 )

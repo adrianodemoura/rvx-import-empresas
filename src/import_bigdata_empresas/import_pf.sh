@@ -39,7 +39,6 @@ importPfTables() {
         OUTPUT=$("${PSQL_CMD[@]}" -t -A -c "SELECT EXISTS(SELECT 1 FROM $POSTGRES_DB_SCHEMA_FINAL.${table})")
         if [ "$OUTPUT" = "t" ]; then
             writeLog "📣 A Tabela \"$POSTGRES_DB_SCHEMA_FINAL.$table\" já possui registros, importação ignorada."
-            echo
             continue
         fi
 

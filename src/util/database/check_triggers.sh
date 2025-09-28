@@ -12,14 +12,14 @@ if [[ -f "$TRIGGER_MIGRATION_FILE" ]]; then
     SQL=$(<"$TRIGGER_MIGRATION_FILE")
     SQL="${SQL//\{schema\}/$DB_SCHEMA}"
 
-    ERROR=$(PGPASSWORD="$POSTGRES_DB_PASSWORD" psql -h $POSTGRES_DB_HOST -p $POSTGRES_DB_PORT -U $POSTGRES_DB_USER -d $POSTGRES_DB_DATABASE -c "$SQL" 2>&1)
+    OUTPUT=$("${PSQL_CMD[@]}" -c "$SQL" 2>&1)
     if [[ $? -eq 0 ]]; then
         writeLog "✅ Triggers checadas com sucesso."
     else
-        if [[ $ERROR == *"already exists"* ]]; then
+        if [[ $OUTPUT == *"already exists"* ]]; then
             writeLog "📣 Algumas triggers já existiam e não foram recriadas."
         else
-            writeLog "Erro ao criar triggers: $ERROR"
+            writeLog "Erro ao criar triggers: $OUTPUT"
             exit 1
         fi
     fi
