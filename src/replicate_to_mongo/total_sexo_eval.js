@@ -1,0 +1,1 @@
+db.pf_pessoas.aggregate([{ $addFields:{ sexo_normalizado:{ $toUpper:{ $trim:{ input:"$sexo" } } } } },{ $match:{ sexo_normalizado:{ $in:["FEMININO","MASCULINO"] } } },{ $group:{ _id:"$sexo_normalizado", count:{ $sum:1 } } },{ $project:{ sexo:"$_id", count:1, _id:0 } }]).forEach(printjson)

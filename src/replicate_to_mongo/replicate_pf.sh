@@ -5,11 +5,13 @@ mkdir -p "$DIR_CACHE/replicate"
 
 readonly table_main='pf_pessoas'
 readonly tables=(pf_telefones pf_emails)
+readonly MAX_ROWS=10000
 readonly MAX_PARALLEL=4
 readonly BATCH_SIZE=1000
 
 writeLog "$(repeat_char '=')"
 writeLog "✅ Iniciando replicação de '$POSTGRES_DB_HOST.$POSTGRES_DB_DATABASE.$POSTGRES_DB_SCHEMA_FINAL' para '$MONGODB_HOST.$MONGODB_DATABASE'..."
+echo
 
 replicateTable() {
     local table=$1
@@ -19,17 +21,8 @@ replicateTable() {
     writeLog "🔄 Replicando tabela '$table' para collection '$collection' ..."
 
     while true; do
-        SQL_PF="SELECT cpf AS _id, * FROM $POSTGRES_DB_SCHEMA_FINAL.$table LIMIT $BATCH_SIZE OFFSET $offset"
-        writeLog "🔎 Executando '$SQL_PF'"
-
-        # Conta as linhas retornadas (sem header)
-        ROWS=$("${PSQL_CMD[@]}" -t -c "SELECT COUNT(*) FROM ($SQL_PF) AS subquery;")
-        ROWS=$(echo "$ROWS" | xargs)  # trim espaços
-
-        if (( ROWS <= 0 )); then
-            writeLog "❌ Nenhuma linha encontrada no lote OFFSET $offset. Encerrando loop."
-            break
-        fi
+        SQL_PF="SELECT cpf AS _id, *, now() as imported_at FROM $POSTGRES_DB_SCHEMA_FINAL.$table ORDER BY cpf LIMIT $BATCH_SIZE OFFSET $offset"
+        writeLog "🛑 Executando '$SQL_PF'"
 
         # Exporta e envia direto pro mongoimport dentro do container
         "${PSQL_CMD[@]}" -c "\copy ($SQL_PF) TO STDOUT WITH CSV HEADER" | \
@@ -43,7 +36,7 @@ replicateTable() {
             --collection "$collection" \
             --type csv \
             --headerline \
-            --mode upsert
+            --mode upsert > /dev/null 2>&1
 
         if [[ $? -ne 0 ]]; then
             writeLog "❌ Erro ao importar lote OFFSET $offset da tabela '$table'. Abortando..."
@@ -51,10 +44,14 @@ replicateTable() {
         fi
 
         ((offset += BATCH_SIZE))
-        writeLog "📦 Lote de $ROWS linhas processado (OFFSET $offset)"
+        writeLog "📦 Lote de $(format_number $BATCH_SIZE) linhas processado (OFFSET $(format_number $offset))"
+        if [[ $offset -ge $MAX_ROWS ]]; then
+            writeLog "🏁 Offset chegou em '$(format_number $offset)' no máximo de '$(format_number $MAX_ROWS)' linhas para serem importadas."
+            break
+        fi
     done
 
-    writeLog "✅ Tabela '$table' replicada com sucesso!"
+    writeLog "✅ Tabela '$table' replicada com sucesso com '$offset' linhas em $(calculateExecutionTime)"
     echo
 }
 
