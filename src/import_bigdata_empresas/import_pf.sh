@@ -10,7 +10,7 @@ readonly PF_ORIGEM="bigdata_final"
 readonly PF_DATA_ORIGEM=$(date +%F)
 readonly TABLES=(pf_pessoas pf_telefones pf_emails)
 
-writeLog "============================================================================================================================="
+writeLog "$(repeat_char '=')"
 writeLog "✅ Iniciando a importação das tabelas PF para o Banco de Dados '$PROD_POSTGRES_DB_DATABASE' e o Schema '$PROD_POSTGRES_DB_SCHEMA'"
 echo
 
@@ -29,8 +29,8 @@ checkFunctions() {
 
 importPfTables() {
     local START_TIME_IMPORT START_ID=1 END_ID=$BATCH_SIZE TOTAL TOTAL_IMPORTED OUTPUT ROWS_AFFECTED COUNT
-    # local MAX_RECORDS=$(echo "1.000.000.000" | tr -d '.') LIMIT=$(echo "10.000.000" | tr -d '.') END_ID=$(echo "1.000.000" | tr -d '.')
-    local MAX_RECORDS=$(echo "1.000" | tr -d '.') LIMIT=$(echo "100" | tr -d '.')
+    local MAX_RECORDS=$(echo "1.000.000.000" | tr -d '.') LIMIT=$(echo "10.000.000" | tr -d '.') END_ID=$(echo "1.000.000" | tr -d '.')
+    # local MAX_RECORDS=$(echo "1.000" | tr -d '.') LIMIT=$(echo "100" | tr -d '.')
 
     # Importando tabela a tabela
     for table in "${TABLES[@]}"; do
@@ -102,24 +102,18 @@ importPfTables() {
     done
 }
 
-# checa banco de dados e schema
 source "./src/util/database/check_db.sh" "$POSTGRES_DB_SCHEMA_FINAL"
 
-# checa as funções
 checkFunctions
 
-# Checa a tabela pf_pessoas
 source "./src/util/database/check_tables.sh" "$POSTGRES_DB_SCHEMA_FINAL"
 
-# Importa os Sócios do banco BigDATA
 importPfTables
 
-# Checa índices, triggers e constraints
 source "./src/util/database/check_indexes.sh" "$POSTGRES_DB_SCHEMA_FINAL"
 source "./src/util/database/check_triggers.sh" "$POSTGRES_DB_SCHEMA_FINAL"
 source "./src/util/database/check_constraints.sh" "$POSTGRES_DB_SCHEMA_FINAL"
 
-# FIM
-echo "---------------------------------------------------------------------------"
-writeLog "✅ Fim da importação Pessoas para \"$POSTGRES_DB_SCHEMA_FINAL.pf_pessoas\" em $(calculateExecutionTime)"
+writeLog "$(repeat_char '-')"
+writeLog "✅ Fim da importação Pessoas em $(calculateExecutionTime)"
 echo
