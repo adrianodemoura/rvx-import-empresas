@@ -51,6 +51,17 @@ replicateTable() {
         fi
     done
 
+    # Total de documentos na collection no MongoDB
+    TOTAL_DOCS=$(docker exec -i $MONGO_CONTAINER mongosh \
+        --quiet \
+        --username "$MONGODB_USER" \
+        --password "$MONGODB_PASSWORD" \
+        --authenticationDatabase "$MONGODB_DATABASE" \
+        "$MONGODB_DATABASE" \
+        --eval "db.getCollection('$collection').countDocuments()")
+    writeLog "ℹ️ Total de documentos na collection '$collection': $(format_number $TOTAL_DOCS)"
+
+    # FIM
     writeLog "✅ Tabela '$table' replicada com sucesso com '$(format_number $offset)' linhas em $(calculateExecutionTime)"
     echo
 }
