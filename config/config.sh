@@ -20,9 +20,6 @@ if [[ ${#DATA_ORIGEM} -eq 0 ]]; then
   exit 1
 fi
 
-# Tratamento para CTRL+C
-trap "writeLog '⛔ Cancelado pelo usuário'; kill 0; exit 130" INT TERM
-
 # Atalho para conexão com o banco de dados no servidor de testes
 readonly PSQL_CMD=(
   docker exec -i $POSTGRES_CONTAINER psql
@@ -43,11 +40,11 @@ readonly MONGO_CMD=(
   "$MONGODB_DATABASE"
 )
 
-MONGOIMPORT_CMD=(
-  docker exec -i mongo-repl mongoimport
+readonly MONGOIMPORT_CMD=(
+  docker exec -i $MONGO_CONTAINER mongoimport
   --host "$MONGODB_HOST"
   --port "$MONGODB_PORT"
   --username "$MONGODB_USER"
   --password "$MONGODB_PASSWORD"
-  --authenticationDatabase "$MONGODB_AUTH_DB"
+  --authenticationDatabase "$MONGODB_DATABASE"
 )
