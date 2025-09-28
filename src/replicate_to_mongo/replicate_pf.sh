@@ -21,8 +21,11 @@ replicateTable() {
     writeLog "🔄 Replicando tabela '$table' para collection '$collection' ..."
 
     while true; do
-        SQL_PF="SELECT cpf AS _id, *, now() as imported_at FROM $POSTGRES_DB_SCHEMA_FINAL.$table ORDER BY cpf LIMIT $BATCH_SIZE OFFSET $offset"
-        # writeLog "🛑 Executando '$SQL_PF'"
+        SQL_PF="SELECT cpf AS _id, *, now() as imported_at 
+            FROM $POSTGRES_DB_SCHEMA_FINAL.$table 
+            ORDER BY cpf 
+            LIMIT $BATCH_SIZE 
+            OFFSET $offset"
 
         # Exporta e envia direto pro mongoimport dentro do container
         "${PSQL_CMD[@]}" -c "\copy ($SQL_PF) TO STDOUT WITH CSV HEADER" | \
@@ -33,16 +36,15 @@ replicateTable() {
         fi
 
         ((offset += BATCH_SIZE))
-        writeLog "📦 Lote de $(format_number $BATCH_SIZE) linhas processado (OFFSET $(format_number $offset))"
+        writeLog "📦 Lote de $(format_number $BATCH_SIZE) linhas processadas (OFFSET $(format_number $offset))"
         if [[ $offset -ge $MAX_ROWS ]]; then
-            writeLog "🏁 Offset chegou em '$(format_number $offset)' no máximo de '$(format_number $MAX_ROWS)' linhas para serem importadas."
+            writeLog "🏁 OFFSET chegou em '$(format_number $offset)' no máximo de '$(format_number $MAX_ROWS)' linhas para serem importadas."
             break
         fi
     done
 
     TOTAL_DOCS=$("${MONGO_CMD[@]}" --eval "db.getCollection('$collection').countDocuments()")
-
-    writeLog "🏁 Total de documentos na collection '$collection': $(format_number $TOTAL_DOCS)"
+    writeLog "✅ Total de documentos na collection '$collection': $(format_number $TOTAL_DOCS)"
 
     # FIM
     writeLog "✅ Tabela '$table' replicada com sucesso com '$(format_number $offset)' linhas em $(calculateExecutionTime)"
