@@ -13,7 +13,14 @@ SELECT indexname FROM pg_indexes WHERE tablename = 'pf_pessoas' AND schemaname =
 -- verifica constratins
 SELECT conname FROM pg_constraint WHERE conrelid = 'bigdata_final.pf_pessoas'::regclass;
 
+-- pf_telefones
+SELECT replace(to_char(COUNT(1), 'FM999G999G999'), ',', '.') FROM bigdata_final.pf_telefones;
+
+-- pf_emails
+SELECT replace(to_char(COUNT(1), 'FM999G999G999'), ',', '.') FROM bigdata_final.pf_emails;
+
 -- pf_pessoas
+SELECT cpf AS _id, * FROM bigdata_final.pf_pessoas LIMIT 1000 OFFSET 0;
 SELECT replace(to_char(COUNT(1), 'FM999G999G999'), ',', '.') FROM bigdata_final.pf_pessoas;
 SELECT * 
 	FROM bigdata_final.pf_pessoas pp
