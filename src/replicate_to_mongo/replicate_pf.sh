@@ -22,7 +22,7 @@ replicateTable() {
 
     while true; do
         SQL_PF="SELECT cpf AS _id, *, now() as imported_at FROM $POSTGRES_DB_SCHEMA_FINAL.$table ORDER BY cpf LIMIT $BATCH_SIZE OFFSET $offset"
-        writeLog "🛑 Executando '$SQL_PF'"
+        # writeLog "🛑 Executando '$SQL_PF'"
 
         # Exporta e envia direto pro mongoimport dentro do container
         "${PSQL_CMD[@]}" -c "\copy ($SQL_PF) TO STDOUT WITH CSV HEADER" | \
@@ -51,7 +51,7 @@ replicateTable() {
         fi
     done
 
-    writeLog "✅ Tabela '$table' replicada com sucesso com '$offset' linhas em $(calculateExecutionTime)"
+    writeLog "✅ Tabela '$table' replicada com sucesso com '$(format_number $offset)' linhas em $(calculateExecutionTime)"
     echo
 }
 
