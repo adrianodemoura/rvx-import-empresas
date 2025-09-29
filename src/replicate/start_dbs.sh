@@ -22,29 +22,19 @@ start_container() {
 }
 
 # Postgres
-start_container "postgres-db" "docker run --restart=always -d --name postgres-db \
+start_container "postgres-db" "docker run --restart=always -d --name $POSTGRES_CONTAINER \
   -e TZ=America/Sao_Paulo \
   -e POSTGRES_PASSWORD=$POSTGRES_DB_PASSWORD \
   -v $POSTGRES_DIR_DATA:/var/lib/postgresql/data \
   -p $POSTGRES_DB_PORT:5432 \
   postgres:14.2-alpine"
 
-# Redis Stack
-start_container "redis-stack" "docker run -d --name redis-stack --restart=always \
-  -p $REDIS_PORT:6379 \
-  -p $REDIS_PORT_WEB:8001 \
-  -v $REDIS_DIR_DATA:/data \
-  redis/redis-stack:latest"
-
-# -------------------------------
 # MongoDB
-# -------------------------------
-# inicia o mongoDB
-start_container "mongo-repl" "docker run -d --name mongo-repl \
-  --restart=always \
+start_container "mongo-repl" "docker run --restart=always -d --name $MONGO_CONTAINER \
   -p $MONGODB_PORT:27017 \
   -v $MONGODB_DIR_DATA:/data/db \
   mongo:7"
+
 # Cria usuário somente se não existir ou atualiza senha
 docker exec -i mongo-repl mongosh <<EOF >/dev/null 2>&1
 use $MONGODB_DATABASE
@@ -54,5 +44,4 @@ EOF
 writeLog "$(repeat_char '-')"
 writeLog "✅ Todos os containers foram iniciados/verificados!"
 writeLog "🐘 Postgres: $POSTGRES_DB_HOST:$POSTGRES_DB_PORT"
-writeLog "🗄 Redis: localhost:$REDIS_PORT (UI: localhost:$REDIS_PORT_WEB)"
 writeLog "🍃 MongoDB: $MONGODB_HOST:$MONGODB_PORT"

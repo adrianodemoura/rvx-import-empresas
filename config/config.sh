@@ -32,8 +32,6 @@ readonly PSQL_CMD=(
 readonly MONGO_CMD=(
   docker exec -i $MONGO_CONTAINER mongosh
   --quiet
-  --host "$MONGODB_HOST"
-  --port "$MONGODB_PORT"
   -u "$MONGODB_USER"
   -p "$MONGODB_PASSWORD"
   "$MONGODB_DATABASE"
