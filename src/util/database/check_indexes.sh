@@ -3,9 +3,9 @@ if [[ -z "$1" ]]; then
     writeLog "❌ Erro: O parâmetro DB_SCHEMA é obrigatório!"
     exit 1
 fi
-DB_SCHEMA="$1"
+CHECK_DB_SCHEMA="$1"
 
-writeLog "📣 Verificando índices das tabelas do Schema '$DB_SCHEMA'..."
+writeLog "📣 Verificando índices das tabelas do Schema '$CHECK_DB_SCHEMA'..."
 INDEX_MIGRATION_FILE="./src/$MODULE_DIR/sqls/create_all_indexes.sql"
 if [[ ! -f "$INDEX_MIGRATION_FILE" ]]; then
     writeLog "🗄  Arquivo de migração para criação de índices não encontrado: $INDEX_MIGRATION_FILE"
@@ -13,8 +13,7 @@ if [[ ! -f "$INDEX_MIGRATION_FILE" ]]; then
 fi
 
 SQL=$(<"$INDEX_MIGRATION_FILE")
-SQL="${SQL//\{schema\}/$DB_SCHEMA}"
-
+SQL="${SQL//\{schema\}/$CHECK_DB_SCHEMA}"
 OUTPUT=$("${PSQL_CMD[@]}" -c "$SQL" 2>&1)
 if [ $? -eq 1 ]; then
     writeLog "❌ Erro ao criar índices: $OUTPUT"

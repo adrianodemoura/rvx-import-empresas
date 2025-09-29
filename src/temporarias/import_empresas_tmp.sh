@@ -3,7 +3,7 @@
 source "./config/config.sh"
 
 CHECK_DB_SCHEMA=true
-CHECK_INDEX_TRIGGER=false
+CHECK_INDEX_TRIGGER=true
 LOG_NAME="import_empresas_tmp"
 readonly MODULE_DIR="temporarias"
 readonly ORIGEM="estabelecimentos"
@@ -29,13 +29,13 @@ declare -A TABLE_FIELDS=(
 checkDbSchema() {
   [ "$CHECK_DB_SCHEMA" != true ] && return
 
-  writeLog "🔍 Removendo o schema '$POSTGRES_DB_SCHEMA_TMP' se existir..."
-  OUTPUT=$("${PSQL_CMD[@]}" -c "DROP SCHEMA IF EXISTS $POSTGRES_DB_SCHEMA_TMP CASCADE;" 2>&1)
-  if [[ $? -ne 0 ]]; then
-      writeLog "❌ Erro ao remover o schema '$POSTGRES_DB_SCHEMA_TMP': $(echo "$OUTPUT" | tr -d '\n')"
-      exit 1
-  fi
-  echo
+  # writeLog "🔍 Removendo o schema '$POSTGRES_DB_SCHEMA_TMP' se existir..."
+  # OUTPUT=$("${PSQL_CMD[@]}" -c "DROP SCHEMA IF EXISTS $POSTGRES_DB_SCHEMA_TMP CASCADE;" 2>&1)
+  # if [[ $? -ne 0 ]]; then
+  #     writeLog "❌ Erro ao remover o schema '$POSTGRES_DB_SCHEMA_TMP': $(echo "$OUTPUT" | tr -d '\n')"
+  #     exit 1
+  # fi
+  # echo
 
   source "./src/util/database/check_db.sh" "$POSTGRES_DB_SCHEMA_TMP"
   source "./src/util/database/check_tables.sh" "$POSTGRES_DB_SCHEMA_TMP"
@@ -106,7 +106,7 @@ loopTables() {
   done
   echo
 }
-loopTables
+# loopTables
 
 checkIndexTrigger
 

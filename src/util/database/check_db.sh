@@ -16,7 +16,7 @@ else
 fi
 echo
 
-writeLog "📣 Verificando o Schema \"$CHECK_DB_SCHEMA\"..."
+writeLog "📣 Verificando o Schema '$CHECK_DB_SCHEMA'..."
 SCHEMA_CHECK="SELECT schema_name FROM information_schema.schemata WHERE schema_name = '$CHECK_DB_SCHEMA';"
 SCHEMA_EXISTS=$("${PSQL_CMD[@]}" -c "$SCHEMA_CHECK" -t -A)
 if [[ -n "$SCHEMA_EXISTS" ]]; then

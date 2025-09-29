@@ -4,9 +4,9 @@ if [[ -z "$1" ]]; then
     writeLog "❌ Erro: O parâmetro SCHEMA é obrigatório!"
     exit 1
 fi
-DB_SCHEMA="$1"
+CHECK_DB_SCHEMA="$1"
  
-writeLog "📣 Verificando constraints no SCHEMA '$DB_SCHEMA'..."
+writeLog "📣 Verificando constraints no SCHEMA '$CHECK_DB_SCHEMA'..."
 CONSTRAINTS_MIGRATION_FILE="./src/$MODULE_DIR/sqls/create_all_constraints.sql"
 if [[ ! -f "$CONSTRAINTS_MIGRATION_FILE" ]]; then
     writeLog "🗄 Arquivo de migração para criação de constraints não encontrado: $CONSTRAINTS_MIGRATION_FILE"
@@ -14,7 +14,7 @@ if [[ ! -f "$CONSTRAINTS_MIGRATION_FILE" ]]; then
 fi
 
 SQL=$(<"$CONSTRAINTS_MIGRATION_FILE")
-SQL="${SQL//\{schema\}/$DB_SCHEMA}"
+SQL="${SQL//\{schema\}/$CHECK_DB_SCHEMA}"
 
 OUTPUT=$("${PSQL_CMD[@]}" -c "$SQL" 2>&1)
 

@@ -4,22 +4,22 @@ if [[ -z "$1" ]]; then
     writeLog "❌ Erro: O parâmetro 'Schema' é obrigatório!"
     exit 1
 fi
-DB_SCHEMA="$1"
+CHECK_DB_SCHEMA="$1"
 
 # Verifica se as tabelas existem
-writeLog "📣 Verificando tabelas no Schema \"$DB_SCHEMA\"..."
+writeLog "📣 Verificando tabelas no Schema \"$CHECK_DB_SCHEMA\"..."
 for LINE in "${TABLES[@]}"; do
     TABLE=${LINE%%=*}
-    TABLE_CHECK="SELECT to_regclass('$DB_SCHEMA.$TABLE');"
+    TABLE_CHECK="SELECT to_regclass('$CHECK_DB_SCHEMA.$TABLE');"
     TABLE_EXISTS=$("${PSQL_CMD[@]}" -c "$TABLE_CHECK" -t -A)
-    if [[ "$TABLE_EXISTS" == "$DB_SCHEMA.$TABLE" ]]; then
-        writeLog "✅ Tabela \"$TABLE\" checada com sucesso no schema $DB_SCHEMA."
+    if [[ "$TABLE_EXISTS" == "$CHECK_DB_SCHEMA.$TABLE" ]]; then
+        writeLog "✅ Tabela \"$TABLE\" checada com sucesso no schema $CHECK_DB_SCHEMA."
     else
         # Cria a tabela se não existir
         MIGRATION_FILE="./src/$MODULE_DIR/sqls/create_table_$TABLE.sql"
         if [[ -f "$MIGRATION_FILE" ]]; then
             SQL=$(<$MIGRATION_FILE)
-            SQL="${SQL//\{schema\}/$DB_SCHEMA}"
+            SQL="${SQL//\{schema\}/$CHECK_DB_SCHEMA}"
             SQL="${SQL//\{table\}/$TABLE}"
 
             OUTPUT=$("${PSQL_CMD[@]}" -c "$SQL" 2>&1)

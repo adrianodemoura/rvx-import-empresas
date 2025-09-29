@@ -4,13 +4,13 @@ if [[ -z "$1" ]]; then
     writeLog "❌ Erro: O parâmetro SCHEMA é obrigatório!"
     exit 1
 fi
-DB_SCHEMA="$1"
+CHECK_DB_SCHEMA="$1"
  
-writeLog "📣 Verificando triggers no SCHEMA \"$DB_SCHEMA\"..."
+writeLog "📣 Verificando triggers no SCHEMA \"$CHECK_DB_SCHEMA\"..."
 TRIGGER_MIGRATION_FILE="./src/$MODULE_DIR/sqls/create_all_triggers.sql"
 if [[ -f "$TRIGGER_MIGRATION_FILE" ]]; then
     SQL=$(<"$TRIGGER_MIGRATION_FILE")
-    SQL="${SQL//\{schema\}/$DB_SCHEMA}"
+    SQL="${SQL//\{schema\}/$CHECK_DB_SCHEMA}"
 
     OUTPUT=$("${PSQL_CMD[@]}" -c "$SQL" 2>&1)
     if [[ $? -eq 0 ]]; then
