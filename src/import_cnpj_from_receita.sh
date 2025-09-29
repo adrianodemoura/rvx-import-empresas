@@ -9,15 +9,15 @@ source "./config/config.sh"
     # exit 1
 # fi
 
-./src/import_temporarias/import_empresas_tmp.sh
+./src/temporarias/import_empresas_tmp.sh
 if [[ $? -ne 0 ]]; then
     writeLog "❌ Erro ao tentar importar empresas!"
     exit 1
 fi
 
-./src/import_bigdata_empresas/import_empresas.sh
+./src/bigdata/import_empresas.sh
 if [[ $? -ne 0 ]]; then
-    writeLog "❌ Erro ao tentar importar empresas para o schema $DB_SCHEMA"
+    writeLog "❌ Erro ao tentar importar empresas para o schema $POSTGRES_DB_SCHEMA"
     exit 1
 fi
 

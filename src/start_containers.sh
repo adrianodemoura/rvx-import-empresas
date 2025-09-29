@@ -1,5 +1,5 @@
 #!/bin/bash
-# Inicia os banco postgre, redis e mongoDB
+# Inicia os containers postgre-db e mongo-repl
 source "./config/config.sh"
 LOG_NAME='replicate'
 
@@ -25,6 +25,7 @@ start_container() {
 start_container "postgres-db" "docker run --restart=always -d --name $POSTGRES_CONTAINER \
   -e TZ=America/Sao_Paulo \
   -e POSTGRES_PASSWORD=$POSTGRES_DB_PASSWORD \
+  -v $(pwd)/storage:/storage \
   -v $POSTGRES_DIR_DATA:/var/lib/postgresql/data \
   -p $POSTGRES_DB_PORT:5432 \
   postgres:14.2-alpine"

@@ -6,12 +6,12 @@ source "./config/config.sh"
 LOG_NAME="import_empresas"
 CHECK_DATABASE_SCHEMA=true
 CHECK_INDEX_TRIGGER_CONSTRAINT=false
-readonly MODULE_DIR="import_bigdata_empresas"
+readonly MODULE_DIR="bigdata"
 readonly ORIGEM="estabelecimentos"
 readonly TABLES=( "pj_cnaes_list" "pj_empresas_cnaes" "pj_empresas" "pj_empresas_emails" "pj_empresas_enderecos" "pj_empresas_socios" "pj_empresas_telefones" "pj_naturezas_juridicas" "pj_qualificacoes_socios")
 
 writeLog "============================================================================================================================="
-writeLog "✅ Iniciando a importação de tabelas para o Banco de Dados '$DB_DATABASE' e o Schema '$DB_SCHEMA'"
+writeLog "✅ Iniciando a importação de tabelas para o Banco de Dados '$POSTGRES_DB_DATABASE' e o Schema '$POSTGRES_DB_SCHEMA'"
 
 carregarSQL() {
   local SQL_FILE=$1
@@ -21,9 +21,9 @@ carregarSQL() {
 
   if [[ -f "$SQL_FILE" ]]; then
     SQL=$(<$SQL_FILE)
-    SQL="${SQL//\$DB_SCHEMA_FINAL/$DB_SCHEMA_FINAL}"
-    SQL="${SQL//\$DB_SCHEMA_TMP/$DB_SCHEMA_TMP}"
-    SQL="${SQL//\$DB_SCHEMA/$DB_SCHEMA}"
+    SQL="${SQL//\$DB_SCHEMA_FINAL/$POSTGRES_DB_SCHEMA_FINAL}"
+    SQL="${SQL//\$DB_SCHEMA_TMP/$POSTGRES_DB_SCHEMA_TMP}"
+    SQL="${SQL//\$DB_SCHEMA/$POSTGRES_DB_SCHEMA}"
     SQL="${SQL//\$DATA_ORIGEM/$DATA_ORIGEM}"
     SQL="${SQL//\$ORIGEM/$ORIGEM}"
     SQL="${SQL//\$LIMIT/$LIMIT}"
@@ -38,26 +38,26 @@ carregarSQL() {
 
 checkDbSchemaTables() {
   if [ "$CHECK_DATABASE_SCHEMA" != true ]; then
-    writeLog "📣 A verificação do Schema \"$DB_SCHEMA\" foi ignorada."
+    writeLog "📣 A verificação do Schema \"$POSTGRES_DB_SCHEMA\" foi ignorada."
     echo
     return
   fi
 
-  source "./src/util/database/check_db.sh" "$DB_SCHEMA"
-  source "./src/util/database/check_tables.sh" "$DB_SCHEMA"
+  source "./src/util/database/check_db.sh" "$POSTGRES_DB_SCHEMA"
+  source "./src/util/database/check_tables.sh" "$POSTGRES_DB_SCHEMA"
   echo
 }
 
 checkIndexTriggerConstraint() {
   if [ "$CHECK_INDEX_TRIGGER_CONSTRAINT" != true ]; then
-    writeLog "📣 A verificação dos Índices, Triggers e Constraints do Schema \"$DB_SCHEMA\" foi ignorada."
+    writeLog "📣 A verificação dos Índices, Triggers e Constraints do Schema \"$POSTGRES_DB_SCHEMA\" foi ignorada."
     echo
     return
   fi
 
-  source "./src/util/database/check_indexes.sh" "$DB_SCHEMA"
-  source "./src/util/database/check_triggers.sh" "$DB_SCHEMA"
-  source "./src/util/database/check_constraints.sh" "$DB_SCHEMA"
+  source "./src/util/database/check_indexes.sh" "$POSTGRES_DB_SCHEMA"
+  source "./src/util/database/check_triggers.sh" "$POSTGRES_DB_SCHEMA"
+  source "./src/util/database/check_constraints.sh" "$POSTGRES_DB_SCHEMA"
   echo
 }
 
@@ -70,13 +70,13 @@ importTable() {
 
   # Verifica se já tem algo na tabela
   writeLog "📣 Verificando se a tabela possui dados..."
-  OUTPUT=$("${PSQL_CMD[@]}" -t -A -c "SELECT EXISTS(SELECT 1 FROM $DB_SCHEMA.${TABLE_IMPORT})")
+  OUTPUT=$("${PSQL_CMD[@]}" -t -A -c "SELECT EXISTS(SELECT 1 FROM $POSTGRES_DB_SCHEMA.${TABLE_IMPORT})")
   if [ "$OUTPUT" = "t" ]; then
-    writeLog "📣 A Tabela \"$DB_SCHEMA.$TABLE_IMPORT\" já possui registros, importação ignorada."
+    writeLog "📣 A Tabela \"$POSTGRES_DB_SCHEMA.$TABLE_IMPORT\" já possui registros, importação ignorada."
     return
   fi
 
-  writeLog "📣 Aguarde o fim da importação na tabela \"$DB_SCHEMA.${TABLE_IMPORT}\"..."
+  writeLog "📣 Aguarde o fim da importação na tabela \"$POSTGRES_DB_SCHEMA.${TABLE_IMPORT}\"..."
   while (( IMPORTED < MAX_RECORDS )); do
     START_TIME_IMPORT=$(date +%s%3N)
 
@@ -86,7 +86,7 @@ importTable() {
     # Executa a SQL de importação
     OUTPUT=$("${PSQL_CMD[@]}" -t -A -c "$SQL" 2>&1)
     if [[ $? -ne 0 ]]; then
-      writeLog "❌ Erro ao popular \"$DB_SCHEMA.$TABLE_IMPORT\": $(echo "$OUTPUT" | tr -d '\n')" "$LOG_NAME_ERROR"
+      writeLog "❌ Erro ao popular \"$POSTGRES_DB_SCHEMA.$TABLE_IMPORT\": $(echo "$OUTPUT" | tr -d '\n')" "$LOG_NAME_ERROR"
       exit 1
     fi
 
@@ -99,11 +99,11 @@ importTable() {
     LAST_ID="$LAST_ID_ROW"
     IMPORTED=$((IMPORTED + LIMIT))
 
-    writeLog "📥 $(format_number $IMPORTED) linhas (ID até=$(format_number $LAST_ID)) importadas para \"$DB_SCHEMA.$TABLE_IMPORT\" em $(calculateExecutionTime $START_TIME_IMPORT)"
+    writeLog "📥 $(format_number $IMPORTED) linhas (ID até=$(format_number $LAST_ID)) importadas para \"$POSTGRES_DB_SCHEMA.$TABLE_IMPORT\" em $(calculateExecutionTime $START_TIME_IMPORT)"
   done
 
   CHECK_INDEX_TRIGGER_CONSTRAINT=true
-  writeLog "✅ Importação concluída: $(format_number $LAST_ID) linhas no total para \"$DB_SCHEMA.$TABLE_IMPORT\""
+  writeLog "✅ Importação concluída: $(format_number $LAST_ID) linhas no total para \"$POSTGRES_DB_SCHEMA.$TABLE_IMPORT\""
   echo
 }
 
@@ -125,5 +125,5 @@ checkIndexTriggerConstraint
 
 # FIM
 echo "---------------------------------------------------------------------------"
-writeLog "✅ Importação de tabelas para o Schema \"$DB_SCHEMA\" finalizada em $(calculateExecutionTime)"
+writeLog "✅ Importação de tabelas para o Schema \"$POSTGRES_DB_SCHEMA\" finalizada em $(calculateExecutionTime)"
 echo

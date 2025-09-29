@@ -5,7 +5,7 @@ source "./config/config.sh"
 CHECK_DB_SCHEMA=true
 CHECK_INDEX_TRIGGER=false
 LOG_NAME="import_pf"
-readonly MODULE_DIR="import_bigdata_empresas"
+readonly MODULE_DIR="bigdata"
 readonly PF_ORIGEM="bigdata_final"
 readonly PF_DATA_ORIGEM=$(date +%F)
 readonly TABLES=(pf_pessoas pf_telefones pf_emails)
