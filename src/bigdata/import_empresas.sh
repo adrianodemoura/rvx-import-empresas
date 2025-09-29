@@ -119,8 +119,8 @@ importTable "pj_empresas" "insert_pj_empresas-select_empresas"
 importTable "pj_empresas_cnaes" "insert_pj_empresas_cnaes-select_estabelecimentos"
 importTable "pj_empresas_socios" "insert_pj_empresas_socios-select_socios"
 importTable "pj_empresas_socios" "update_pj_empresas_socios-select_socios"
-
 echo
+
 checkIndexTriggerConstraint
 
 # FIM
