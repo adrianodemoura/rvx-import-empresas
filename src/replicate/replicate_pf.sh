@@ -26,13 +26,11 @@ replicateWithSubcollections() {
         echo
         writeLog "🔎 Buscando dados de '$table' ..."
         while true; do
-            SQL="SELECT row_to_json(t)
-                FROM (
-                    SELECT p1.cpf AS _id, p1.id as id, COALESCE( (SELECT json_agg(p2.*) FROM $POSTGRES_DB_SCHEMA_FINAL.$table p2 WHERE p2.cpf = p1.cpf), '[]') AS $nick
-                    FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main p1
-                    ORDER BY p1.cpf
-                    LIMIT $BATCH_SIZE OFFSET $offset
-                ) t;"
+            SQL="SELECT p1.cpf AS _id, p1.id as id, COALESCE( (SELECT json_agg(p2.*) FROM $POSTGRES_DB_SCHEMA_FINAL.$table p2 WHERE p2.cpf = p1.cpf), '[]') AS $nick
+                FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main p1
+                ORDER BY p1.cpf
+                LIMIT $BATCH_SIZE OFFSET $offset"
+            SQL="SELECT row_to_json(t) FROM ( $SQL ) t;"
             if [ $loop == 1 ]; then
                 SQL="${SQL//"p1.cpf AS _id, p1.id as id,"/"p1.cpf AS _id, p1.*, now() AS imported_at,"}"
             fi
