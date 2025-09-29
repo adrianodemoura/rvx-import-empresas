@@ -41,8 +41,6 @@ readonly MONGO_CMD=(
 readonly MONGOIMPORT_CMD=(
   docker exec -i $MONGO_CONTAINER mongoimport
   --quiet
-  --host "$MONGODB_HOST"
-  --port "$MONGODB_PORT"
   -u "$MONGODB_USER"
   -p "$MONGODB_PASSWORD"
   --db "$MONGODB_DATABASE"

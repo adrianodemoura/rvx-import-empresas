@@ -4,64 +4,79 @@ LOG_NAME='replicate'
 mkdir -p "$DIR_CACHE/replicate"
 
 readonly table_main='pf_pessoas'
-readonly tables=(pf_telefones pf_emails)
-readonly MAX_ROWS=10000
-readonly MAX_PARALLEL=4
-readonly BATCH_SIZE=1000
+readonly tables=(pf_emails.emails pf_telefones.telefones)
+readonly BATCH_SIZE=10
+readonly MAX_ROWS=100
 
 writeLog "$(repeat_char '=')"
 writeLog "✅ Iniciando replicação de '$POSTGRES_DB_HOST.$POSTGRES_DB_DATABASE.$POSTGRES_DB_SCHEMA_FINAL' para '$MONGODB_HOST.$MONGODB_DATABASE'..."
 echo
 
-replicateTable() {
-    local table=$1
-    local collection=${2:-$table_main}
+replicateWithSubcollections() {
+    local loop=1
+    local table=""
+    local nick=""
     local offset=0
 
-    writeLog "🔄 Replicando tabela '$table' para collection '$collection' ..."
+    writeLog "🔄 Replicando tabela principal '$table_main' com subcollections ..."
+    for item in "${tables[@]}"; do
+        table=${item%%.*}
+        nick=${item#*.}
 
-    while true; do
-        SQL_PF="SELECT cpf AS _id, *, now() as imported_at 
-            FROM $POSTGRES_DB_SCHEMA_FINAL.$table 
-            ORDER BY cpf 
-            LIMIT $BATCH_SIZE 
-            OFFSET $offset"
+        echo
+        writeLog "🔎 Buscando dados de '$table' ..."
+        while true; do
+            SQL="SELECT row_to_json(t)
+                FROM (
+                    SELECT p1.cpf AS _id, p1.id as id, COALESCE( (SELECT json_agg(p2.*) FROM $POSTGRES_DB_SCHEMA_FINAL.$table p2 WHERE p2.cpf = p1.cpf), '[]') AS $nick
+                    FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main p1
+                    ORDER BY p1.cpf
+                    LIMIT $BATCH_SIZE OFFSET $offset
+                ) t;"
+            if [ $loop == 1 ]; then
+                SQL="${SQL//"p1.cpf AS _id, p1.id as id,"/"p1.cpf AS _id, p1.*, now() AS imported_at,"}"
+            fi
 
-        # Exporta e envia direto pro mongoimport dentro do container
-        "${PSQL_CMD[@]}" -c "\copy ($SQL_PF) TO STDOUT WITH CSV HEADER" | \
-            "${MONGOIMPORT_CMD[@]}" --collection "$collection" --type csv --headerline --mode upsert > /dev/null 2>&1
-        if [[ $? -ne 0 ]]; then
-            writeLog "❌ Erro ao importar lote OFFSET $offset da tabela '$table'. Abortando..."
-            exit 1
-        fi
+            OUT=$("${PSQL_CMD[@]}" -t -A -F "" -c "$SQL")
+            if [[ -z "$OUT" ]]; then
+                writeLog "⚠️ Nenhum dado retornado no lote OFFSET $offset/$BATCH_SIZE e no loop $loop!"
+                break
+            fi
 
-        ((offset += BATCH_SIZE))
-        writeLog "📦 Lote de $(format_number $BATCH_SIZE) linhas processadas (OFFSET $(format_number $offset))"
-        if [[ $offset -ge $MAX_ROWS ]]; then
-            writeLog "🏁 OFFSET chegou em '$(format_number $offset)' no máximo de '$(format_number $MAX_ROWS)' linhas para serem importadas."
-            break
-        fi
+            # Envia para o MongoDB
+            echo "$OUT" | "${MONGOIMPORT_CMD[@]}" \
+                --collection "$table_main" \
+                --mode upsert \
+                --upsertFields _id \
+                --type json > /dev/null 2>&1
+
+            if [[ $? -ne 0 ]]; then
+                writeLog "❌ Erro ao importar lote OFFSET $offset. Abortando..."
+                exit 1
+            fi
+
+            ((offset += BATCH_SIZE))
+            writeLog "📦 $(printf "%09d" "$loop")] Lote $(format_number $offset)/$(format_number $BATCH_SIZE) processado com sucesso em $(calculateExecutionTime)"
+
+            [[ $offset -ge $MAX_ROWS ]] && break
+            ((loop++))
+        done
+        offset=0
     done
 
-    TOTAL_DOCS=$("${MONGO_CMD[@]}" --eval "db.getCollection('$collection').countDocuments()")
-    writeLog "✅ Total de documentos na collection '$collection': $(format_number $TOTAL_DOCS)"
-
-    # FIM
-    writeLog "✅ Tabela '$table' replicada com sucesso com '$(format_number $offset)' linhas em $(calculateExecutionTime)"
+    TOTAL_DOCS=$("${MONGO_CMD[@]}" --quiet --eval "db.getCollection('$table_main').countDocuments()")
+    echo
+    writeLog "✅ Tabela '$table_main' replicada com sucesso com '$(format_number $TOTAL_DOCS)' documentos no MongoDB!"
     echo
 }
 
-# Primeiro importa a tabela principal
-replicateTable "$table_main" "$table_main"
+OUTPUT=$("${MONGO_CMD[@]}" --quiet --eval "use $MONGODB_DATABASE; db.dropDatabase()")
+if [[ $? -ne 0 ]]; then
+    writeLog "❌ Erro ao tentar excluir a database $MONGO_DATABASE"
+    exit 1
+fi
 
-# Depois importa as sub-tabelas em paralelo (se quiser habilitar)
-# count=0
-# for table in "${tables[@]}"; do
-#     replicateTable "$table" "$table_main" &
-#     ((count++))
-#     [[ $count -ge $MAX_PARALLEL ]] && wait && count=0
-# done
-# wait
+replicateWithSubcollections
 
 writeLog "$(repeat_char '-')"
-writeLog "🏁 Todas as tabelas foram replicadas para o MongoDB!"
+writeLog "🏁 Replicação concluída com sucesso!"
