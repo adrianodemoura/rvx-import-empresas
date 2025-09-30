@@ -22,15 +22,16 @@ fi
 
 # Atalho para conexão com o banco de dados no servidor de testes
 readonly PSQL_CMD=(
-  docker exec -i $POSTGRES_CONTAINER psql
+  docker exec -i $POSTGRES_CONTAINER 
+  psql
   -U "$POSTGRES_DB_USER"
   -d "$POSTGRES_DB_DATABASE"
   -v PGPASSWORD="$POSTGRES_DB_PASSWORD"
 )
 readonly PROD_PSQL_CMD=(
-  docker exec -i -e PGPASSWORD="$PROD_POSTGRES_DB_PASSWORD" 
-  $POSTGRES_CONTAINER 
+  docker exec -i -e PGPASSWORD="$PROD_POSTGRES_DB_PASSWORD" $POSTGRES_CONTAINER 
   psql 
+  -p "$PROD_POSTGRES_DB_PORT"
   -h "$PROD_POSTGRES_DB_HOST" 
   -U "$PROD_POSTGRES_DB_USER" 
   -d "$PROD_POSTGRES_DB_DATABASE"

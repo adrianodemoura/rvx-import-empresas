@@ -2,8 +2,10 @@
 source "./config/config.sh"
 LOG_NAME='replicate'
 
-readonly BATCH_SIZE=100
-readonly MAX_LOOPS=4
+LAST_ID=0
+TOTAL_REPLICATED=0
+LAST_UPDATED_AT=0
+readonly NUM_INSTANCES=10
 readonly table_main='pf_pessoas'
 readonly tables=(
     pf_banco_gov.banco_gov
@@ -42,64 +44,91 @@ writeLog "$(repeat_char '=')"
 writeLog "✅ Iniciando replicação de '$POSTGRES_DB_HOST.$POSTGRES_DB_DATABASE.$POSTGRES_DB_SCHEMA_FINAL' para '$MONGODB_HOST.$MONGODB_DATABASE'..."
 echo
 
-replicateWithSubcollections() {
-    local loop=1 table="" nick="" offset=0 
-    local OUT START_TIME_REPLICATE
+clearDatabase() {
+    local OUTPUT=$("${MONGO_CMD[@]}" --quiet --eval "db.dropDatabase()")
+    if [[ $? -ne 0 ]]; then
+        writeLog "❌ Erro ao tentar excluir a database $MONGO_DATABASE"
+        exit 1
+    fi
+    wait
+    writeLog "✅ Banco de dados '$MONGODB_DATABASE' do MongoDB, limpado com sucesso."
+}
 
-    writeLog "🔄 Aguarde a replicação tabela principal '$table_main' com subcollections ..."
+checkUptadeAt() {
+    local OUT=$("${MONGO_CMD[@]}" --quiet --eval "db.getCollection('pf_pessoas').findOne({}, { updated_at: 1, _id: 0 })?.updated_at")
+    LAST_UPDATED_AT=${OUT:-0}
+    writeLog "🔄 Iniciando a replicação com dados MAIOR QUE '$LAST_UPDATED_AT'"
+
+    # Descobrindo o último ID
+    # LAST_ID=$("${PROD_PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
+    LAST_ID=$(echo "1.000" | tr -d '.')
+    # writeLog "✅ Último ID de '$table_main' $(format_number $LAST_ID)"
     echo
-    while true; do
-        START_TIME_REPLICATE=$(date +%s%3N)
-        SQL="SELECT p1.cpf AS _id, p1.*, now() AS imported_at" 
-        for item in "${tables[@]}"; do
-            table=${item%%.*}
-            nick=${item#*.}
-            SQL+=", COALESCE( (SELECT json_agg($nick.*) FROM $POSTGRES_DB_SCHEMA_FINAL.$table $nick WHERE $nick.cpf = p1.cpf), '[]') AS $nick"
-        done
-        SQL+=" FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main p1"
-        SQL+=" ORDER BY p1.cpf"
-        SQL+=" LIMIT $BATCH_SIZE OFFSET $offset"
-        SQL="SELECT row_to_json(t) FROM ( $SQL ) t;"
+}
 
-        OUT=$("${PROD_PSQL_CMD[@]}" -t -A -F "" -c "$SQL")
-        if [[ -z "$OUT" ]]; then
-            writeLog "⚠️ Nenhum dado retornado no lote $BATCH_SIZE/$offset no loop $loop!"
-            break
-        fi
+checkEnd() {
+    local totalReplicated=$(cat "/tmp/total_replicated")
 
-        # Envia para o MongoDB
+    echo
+    if [[ $totalReplicated -gt 0 ]]; then
+        $("${MONGO_CMD[@]}" --quiet --eval "db.$table_main.createIndex({ updated_at: 1 }, { sparse: true })" > /dev/null)
+        writeLog "✅ Index 'updated_at' atualizado com sucesso."
+        writeLog "✅ Tabela '$table_main' replicada $FORCE_UPDATED_INDEX_MONGO com sucesso com '$(format_number $totalReplicated)' documentos no MongoDB em $(calculateExecutionTime)"
+    fi
+    writeLog "$(repeat_char '-')"
+    writeLog "🏁 Replicação concluída com sucesso! em $(calculateExecutionTime)"
+}
+
+replicateWithSubcollections() {
+    local SQL OUT START_TIME_REPLICATE=$(date +%s%3N)
+    local start_id=$1 end_id=$2
+    local table="" nick="" offset=0 last_updated_at=$(date +"%Y-%m-%dT%H:%M:%S.%3N")
+
+    [[ -z "$1" || -z "$2" ]] && { writeLog "❌ Erro: Os IDs inicial e final são obrigatórios!"; exit 1; }
+
+    SQL="SELECT p1.cpf AS _id, p1.*, now() AS imported_at" 
+    for item in "${tables[@]}"; do
+        table=${item%%.*}
+        nick=${item#*.}
+        SQL+=", COALESCE( (SELECT json_agg($nick.*) FROM $POSTGRES_DB_SCHEMA_FINAL.$table $nick WHERE $nick.cpf = p1.cpf), '[]') AS $nick"
+    done
+    SQL+=" FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main p1"
+    SQL+=" WHERE p1.id >= $start_id AND p1.id <= $end_id"
+    [[ "$LAST_UPDATED_AT" > 0 ]] && SQL+=" AND p1.updated_at > '$LAST_UPDATED_AT'"
+    SQL="SELECT row_to_json(t) FROM ( $SQL ) t;"
+
+    OUT=$("${PROD_PSQL_CMD[@]}" -t -A -F "" -P pager=off -c "$SQL" 2>&1)
+    if [[ -z "$OUT" ]]; then
+        writeLog "📦 Nenhum dado retornado na faixa $start_id/$end_id"
+    else
         echo "$OUT" | "${MONGOIMPORT_CMD[@]}" --collection "$table_main" --mode upsert --upsertFields _id --type json > /dev/null 2>&1
         if [[ $? -ne 0 ]]; then
             writeLog "❌ Erro ao importar lote OFFSET $offset. Abortando..."
             exit 1
         fi
+        ((TOTAL_REPLICATED++))
+        echo "$TOTAL_REPLICATED" > "/tmp/total_replicated"
 
-        ((offset += BATCH_SIZE))
-        writeLog "📦 $(printf "%09d" "$loop") - Lote $(format_number $BATCH_SIZE)/$(format_number $offset) replicado com sucesso em $(calculateExecutionTime $START_TIME_REPLICATE)"
-
-        [[ $loop -ge $MAX_LOOPS ]] && break
-        ((loop++))
-    done
-    echo
-
-    TOTAL_DOCS=$("${MONGO_CMD[@]}" --quiet --eval "db.getCollection('$table_main').countDocuments()")
-    writeLog "✅ Tabela '$table_main' replicada com sucesso com '$(format_number $TOTAL_DOCS)' documentos no MongoDB em $(calculateExecutionTime)"
-    echo
+        writeLog "📦 Faixa $(format_number $start_id)/$(format_number $end_id) com $(format_number $TOTAL_REPLICATED) linhas replicadas com sucesso em $(calculateExecutionTime $START_TIME_REPLICATE)"
+    fi
 }
 
 # Limbando o banco de dados no mongoDB
-OUTPUT=$("${MONGO_CMD[@]}" --quiet --eval "db.dropDatabase()")
-if [[ $? -ne 0 ]]; then
-    writeLog "❌ Erro ao tentar excluir a database $MONGO_DATABASE"
-    exit 1
-fi
+clearDatabase
 
-# Descobrindo o último ID
-writeLog "✅ Limpando o banco de dados '$MONGODB_DATABASE' do MongoDB."
-LAST_ID=$("${PROD_PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
-writeLog "✅ Último ID de '$table_main' $(format_number $LAST_ID)"
+checkUptadeAt
 
-replicateWithSubcollections
+pids=()
+chunk_size=$((LAST_ID / NUM_INSTANCES))
+for ((i=0; i<NUM_INSTANCES; i++)); do
+  start_id=$(( (i * chunk_size) + 1 ))
+  end_id=$(( (i + 1) * chunk_size ))
+  if [ $i -eq $((NUM_INSTANCES - 1)) ]; then
+    end_id=$LAST_ID
+  fi
+  replicateWithSubcollections $start_id $end_id &
+  pids+=($!)
+done
+wait
 
-writeLog "$(repeat_char '-')"
-writeLog "🏁 Replicação concluída com sucesso! em $(calculateExecutionTime)"
+checkEnd
