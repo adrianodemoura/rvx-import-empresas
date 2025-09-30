@@ -19,48 +19,42 @@ replicateWithSubcollections() {
     local offset=0
 
     writeLog "🔄 Replicando tabela principal '$table_main' com subcollections ..."
-    for item in "${tables[@]}"; do
-        table=${item%%.*}
-        nick=${item#*.}
 
-        echo
-        writeLog "🔎 Buscando dados de '$table' ..."
-        while true; do
-            SQL="SELECT p1.cpf AS _id, p1.id as id, COALESCE( (SELECT json_agg(p2.*) FROM $POSTGRES_DB_SCHEMA_FINAL.$table p2 WHERE p2.cpf = p1.cpf), '[]') AS $nick
-                FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main p1
-                ORDER BY p1.cpf
-                LIMIT $BATCH_SIZE OFFSET $offset"
-            SQL="SELECT row_to_json(t) FROM ( $SQL ) t;"
-            if [ $loop == 1 ]; then
-                SQL="${SQL//"p1.cpf AS _id, p1.id as id,"/"p1.cpf AS _id, p1.*, now() AS imported_at,"}"
-            fi
-
-            OUT=$("${PSQL_CMD[@]}" -t -A -F "" -c "$SQL")
-            if [[ -z "$OUT" ]]; then
-                writeLog "⚠️ Nenhum dado retornado no lote OFFSET $offset/$BATCH_SIZE e no loop $loop!"
-                break
-            fi
-
-            # Envia para o MongoDB
-            echo "$OUT" | "${MONGOIMPORT_CMD[@]}" \
-                --collection "$table_main" \
-                --mode upsert \
-                --upsertFields _id \
-                --type json > /dev/null 2>&1
-
-            if [[ $? -ne 0 ]]; then
-                writeLog "❌ Erro ao importar lote OFFSET $offset. Abortando..."
-                exit 1
-            fi
-
-            ((offset += BATCH_SIZE))
-            writeLog "📦 $(printf "%09d" "$loop")] Lote $(format_number $offset)/$(format_number $BATCH_SIZE) processado com sucesso em $(calculateExecutionTime)"
-
-            [[ $offset -ge $MAX_ROWS ]] && break
-            ((loop++))
+    echo
+    writeLog "🔎 Buscando dados de '$table' ..."
+    while true; do
+        SQL="SELECT p1.cpf AS _id, p1.*" 
+        for item in "${tables[@]}"; do
+            table=${item%%.*}
+            nick=${item#*.}
+            SQL+=", COALESCE( (SELECT json_agg($nick.*) FROM $POSTGRES_DB_SCHEMA_FINAL.$table $nick WHERE $nick.cpf = p1.cpf), '[]') AS $nick"
         done
-        offset=0
+        SQL+=" FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main p1 ORDER BY p1.cpf LIMIT $BATCH_SIZE OFFSET $offset"
+        SQL="SELECT row_to_json(t) FROM ( $SQL ) t;"
+        # if [ $loop == 1 ]; then
+        #     SQL="${SQL//"p1.cpf AS _id, p1.id as id,"/"p1.cpf AS _id, p1.*, now() AS imported_at,"}"
+        # fi
+
+        OUT=$("${PSQL_CMD[@]}" -t -A -F "" -c "$SQL")
+        if [[ -z "$OUT" ]]; then
+            writeLog "⚠️ Nenhum dado retornado no lote OFFSET $offset/$BATCH_SIZE e no loop $loop!"
+            break
+        fi
+
+        # Envia para o MongoDB
+        echo "$OUT" | "${MONGOIMPORT_CMD[@]}" --collection "$table_main" --mode upsert --upsertFields _id --type json > /dev/null 2>&1
+        if [[ $? -ne 0 ]]; then
+            writeLog "❌ Erro ao importar lote OFFSET $offset. Abortando..."
+            exit 1
+        fi
+
+        ((offset += BATCH_SIZE))
+        writeLog "📦 $(printf "%09d" "$loop")] Lote $(format_number $offset)/$(format_number $BATCH_SIZE) processado com sucesso em $(calculateExecutionTime)"
+
+        [[ $offset -ge $MAX_ROWS ]] && break
+        ((loop++))
     done
+
 
     TOTAL_DOCS=$("${MONGO_CMD[@]}" --quiet --eval "db.getCollection('$table_main').countDocuments()")
     echo
