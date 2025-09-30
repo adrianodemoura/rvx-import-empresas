@@ -56,7 +56,9 @@ replicateWithSubcollections() {
             nick=${item#*.}
             SQL+=", COALESCE( (SELECT json_agg($nick.*) FROM $POSTGRES_DB_SCHEMA_FINAL.$table $nick WHERE $nick.cpf = p1.cpf), '[]') AS $nick"
         done
-        SQL+=" FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main p1 ORDER BY p1.cpf LIMIT $BATCH_SIZE OFFSET $offset"
+        SQL+=" FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main p1"
+        SQL+=" ORDER BY p1.cpf"
+        SQL+=" LIMIT $BATCH_SIZE OFFSET $offset"
         SQL="SELECT row_to_json(t) FROM ( $SQL ) t;"
 
         OUT=$("${PROD_PSQL_CMD[@]}" -t -A -F "" -c "$SQL")
@@ -85,13 +87,17 @@ replicateWithSubcollections() {
     echo
 }
 
+# Limbando o banco de dados no mongoDB
 OUTPUT=$("${MONGO_CMD[@]}" --quiet --eval "db.dropDatabase()")
 if [[ $? -ne 0 ]]; then
     writeLog "❌ Erro ao tentar excluir a database $MONGO_DATABASE"
     exit 1
 fi
+
+# Descobrindo o último ID
 writeLog "✅ Limpando o banco de dados '$MONGODB_DATABASE' do MongoDB."
-wait
+LAST_ID=$("${PROD_PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
+writeLog "✅ Último ID de '$table_main' $(format_number $LAST_ID)"
 
 replicateWithSubcollections
 
