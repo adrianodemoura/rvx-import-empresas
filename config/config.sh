@@ -27,6 +27,14 @@ readonly PSQL_CMD=(
   -d "$POSTGRES_DB_DATABASE"
   -v PGPASSWORD="$POSTGRES_DB_PASSWORD"
 )
+readonly PROD_PSQL_CMD=(
+  docker exec -i -e PGPASSWORD="$PROD_POSTGRES_DB_PASSWORD" 
+  $POSTGRES_CONTAINER 
+  psql 
+  -h "$PROD_POSTGRES_DB_HOST" 
+  -U "$PROD_POSTGRES_DB_USER" 
+  -d "$PROD_POSTGRES_DB_DATABASE"
+)
 
 # Atalho para conexão com o MongoDB (dentro do container)
 readonly MONGO_CMD=(
