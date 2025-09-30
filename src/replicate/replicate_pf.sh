@@ -1,10 +1,9 @@
 #!/bin/bash
 source "./config/config.sh"
 LOG_NAME='replicate'
-mkdir -p "$DIR_CACHE/replicate"
 
-readonly BATCH_SIZE=10000
-readonly MAX_ROWS=100000
+readonly BATCH_SIZE=100
+readonly MAX_LOOPS=4
 readonly table_main='pf_pessoas'
 readonly tables=(
     pf_banco_gov.banco_gov
@@ -44,16 +43,13 @@ writeLog "✅ Iniciando replicação de '$POSTGRES_DB_HOST.$POSTGRES_DB_DATABASE
 echo
 
 replicateWithSubcollections() {
-    local loop=1
-    local table=""
-    local nick=""
-    local offset=0
+    local loop=1 table="" nick="" offset=0 
+    local OUT START_TIME_REPLICATE
 
-    writeLog "🔄 Replicando tabela principal '$table_main' com subcollections ..."
-
+    writeLog "🔄 Aguarde a replicação tabela principal '$table_main' com subcollections ..."
     echo
-    writeLog "🔎 Iniciando a replicação de pessoas..."
     while true; do
+        START_TIME_REPLICATE=$(date +%s%3N)
         SQL="SELECT p1.cpf AS _id, p1.*, now() AS imported_at" 
         for item in "${tables[@]}"; do
             table=${item%%.*}
@@ -65,7 +61,7 @@ replicateWithSubcollections() {
 
         OUT=$("${PROD_PSQL_CMD[@]}" -t -A -F "" -c "$SQL")
         if [[ -z "$OUT" ]]; then
-            writeLog "⚠️ Nenhum dado retornado no lote OFFSET $offset/$BATCH_SIZE e no loop $loop!"
+            writeLog "⚠️ Nenhum dado retornado no lote $BATCH_SIZE/$offset no loop $loop!"
             break
         fi
 
@@ -77,25 +73,25 @@ replicateWithSubcollections() {
         fi
 
         ((offset += BATCH_SIZE))
-        writeLog "📦 $(printf "%09d" "$loop") - Lote $(format_number $offset)/$(format_number $BATCH_SIZE) processado com sucesso em $(calculateExecutionTime)"
+        writeLog "📦 $(printf "%09d" "$loop") - Lote $(format_number $BATCH_SIZE)/$(format_number $offset) replicado com sucesso em $(calculateExecutionTime $START_TIME_REPLICATE)"
 
-        [[ $offset -ge $MAX_ROWS ]] && break
+        [[ $loop -ge $MAX_LOOPS ]] && break
         ((loop++))
     done
-
+    echo
 
     TOTAL_DOCS=$("${MONGO_CMD[@]}" --quiet --eval "db.getCollection('$table_main').countDocuments()")
-    echo
-    writeLog "✅ Tabela '$table_main' replicada com sucesso com '$(format_number $TOTAL_DOCS)' documentos no MongoDB!"
+    writeLog "✅ Tabela '$table_main' replicada com sucesso com '$(format_number $TOTAL_DOCS)' documentos no MongoDB em $(calculateExecutionTime)"
     echo
 }
 
-OUTPUT=$("${MONGO_CMD[@]}" --quiet --eval "use $MONGODB_DATABASE; db.dropDatabase()")
+OUTPUT=$("${MONGO_CMD[@]}" --quiet --eval "db.dropDatabase()")
 if [[ $? -ne 0 ]]; then
     writeLog "❌ Erro ao tentar excluir a database $MONGO_DATABASE"
     exit 1
 fi
 writeLog "✅ Limpando o banco de dados '$MONGODB_DATABASE' do MongoDB."
+wait
 
 replicateWithSubcollections
 
