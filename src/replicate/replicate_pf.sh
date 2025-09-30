@@ -54,15 +54,16 @@ clearDatabase() {
     writeLog "✅ Banco de dados '$MONGODB_DATABASE' do MongoDB, limpado com sucesso."
 }
 
-checkUptadeAt() {
-    local OUT=$("${MONGO_CMD[@]}" --quiet --eval "db.getCollection('pf_pessoas').findOne({}, { updated_at: 1, _id: 0 })?.updated_at")
+checkStart() {
+    # Recuperando a atualização do último documento
+    local OUT=$("${MONGO_CMD[@]}" --quiet --eval "db.getCollection('$table_main').findOne({}, { updated_at: 1, _id: 0 })?.updated_at")
     LAST_UPDATED_AT=${OUT:-0}
     writeLog "🔄 Iniciando a replicação com dados MAIOR QUE '$LAST_UPDATED_AT'"
 
     # Descobrindo o último ID
     # LAST_ID=$("${PROD_PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
     LAST_ID=$(echo "1.000" | tr -d '.')
-    # writeLog "✅ Último ID de '$table_main' $(format_number $LAST_ID)"
+    writeLog "✅ Último ID de '$table_main' $(format_number $LAST_ID)"
     echo
 }
 
@@ -83,6 +84,7 @@ replicateWithSubcollections() {
     local SQL OUT START_TIME_REPLICATE=$(date +%s%3N)
     local start_id=$1 end_id=$2
     local table="" nick="" offset=0 last_updated_at=$(date +"%Y-%m-%dT%H:%M:%S.%3N")
+    local dif_ids=$(( $end_id - $start_id +1 ))
 
     [[ -z "$1" || -z "$2" ]] && { writeLog "❌ Erro: Os IDs inicial e final são obrigatórios!"; exit 1; }
 
@@ -97,7 +99,7 @@ replicateWithSubcollections() {
     [[ "$LAST_UPDATED_AT" > 0 ]] && SQL+=" AND p1.updated_at > '$LAST_UPDATED_AT'"
     SQL="SELECT row_to_json(t) FROM ( $SQL ) t;"
 
-    OUT=$("${PROD_PSQL_CMD[@]}" -t -A -F "" -P pager=off -c "$SQL" 2>&1)
+    OUT=$("${PROD_PSQL_CMD[@]}" -t -A -F "" -c "$SQL" 2>&1)
     if [[ -z "$OUT" ]]; then
         writeLog "📦 Nenhum dado retornado na faixa $start_id/$end_id"
     else
@@ -106,17 +108,17 @@ replicateWithSubcollections() {
             writeLog "❌ Erro ao importar lote OFFSET $offset. Abortando..."
             exit 1
         fi
-        ((TOTAL_REPLICATED++))
+        ((TOTAL_REPLICATED+=$dif_ids))
         echo "$TOTAL_REPLICATED" > "/tmp/total_replicated"
 
-        writeLog "📦 Faixa $(format_number $start_id)/$(format_number $end_id) com $(format_number $TOTAL_REPLICATED) linhas replicadas com sucesso em $(calculateExecutionTime $START_TIME_REPLICATE)"
+        writeLog "📦 Faixa $(format_number $start_id)/$(format_number $end_id) com $(format_number $dif_ids) linhas replicadas com sucesso em $(calculateExecutionTime $START_TIME_REPLICATE)"
     fi
 }
 
 # Limbando o banco de dados no mongoDB
 clearDatabase
 
-checkUptadeAt
+checkStart
 
 pids=()
 chunk_size=$((LAST_ID / NUM_INSTANCES))
