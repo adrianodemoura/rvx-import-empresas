@@ -15,10 +15,6 @@ if [[ ${#DATA_ORIGEM} -eq 0 ]]; then
   getLatestDir
   DATA_ORIGEM=$(cat .data_origem 2>/dev/null)
 fi
-if [[ ${#DATA_ORIGEM} -eq 0 ]]; then
-  writeLog "❌ Impossível continuar sem a data de origem!"
-  exit 1
-fi
 
 # Atalho para conexão com o banco de dados no servidor de testes
 readonly PSQL_CMD=(
