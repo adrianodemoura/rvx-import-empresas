@@ -6,7 +6,7 @@ LAST_ID=0
 TOTAL_REPLICATED=0
 LAST_UPDATED_AT=0
 readonly NUM_INSTANCES=10
-readonly NUM_MAX_PER_TRACK=500
+readonly NUM_MAX_PER_TRACK=$(echo "1.000" | tr -d '.')
 readonly table_main='pf_pessoas'
 readonly tables=(
     pf_banco_gov.banco_gov
@@ -62,9 +62,9 @@ checkStart() {
     writeLog "🔄 Iniciando a replicação com dados MAIOR QUE '$LAST_UPDATED_AT'"
 
     # Descobrindo o último ID
-    # LAST_ID=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
+    LAST_ID=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
     # LAST_ID=$(echo "249.947.073" | tr -d '.')
-    LAST_ID=$(echo "1000" | tr -d '.')
+    # LAST_ID=$(echo "10.000" | tr -d '.')
 
     writeLog "✅ Último ID de '$table_main': $(format_number $LAST_ID)"
     echo
@@ -121,7 +121,7 @@ replicateWithSubcollections() {
     fi
 }
 
-clearDatabaseMongo
+# clearDatabaseMongo
 
 checkStart
 
