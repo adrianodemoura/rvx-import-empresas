@@ -6,6 +6,7 @@ LAST_ID=0
 TOTAL_REPLICATED=0
 LAST_UPDATED_AT=0
 readonly NUM_INSTANCES=10
+readonly NUM_MAX_PER_TRACK=500
 readonly table_main='pf_pessoas'
 readonly tables=(
     pf_banco_gov.banco_gov
@@ -44,7 +45,7 @@ writeLog "$(repeat_char '=')"
 writeLog "✅ Iniciando replicação de '$POSTGRES_DB_HOST.$POSTGRES_DB_DATABASE.$POSTGRES_DB_SCHEMA_FINAL' para '$MONGODB_HOST.$MONGODB_DATABASE'..."
 echo
 
-clearDatabase() {
+clearDatabaseMongo() {
     local OUTPUT=$("${MONGO_CMD[@]}" --quiet --eval "db.dropDatabase()")
     if [[ $? -ne 0 ]]; then
         writeLog "❌ Erro ao tentar excluir a database $MONGO_DATABASE"
@@ -61,9 +62,11 @@ checkStart() {
     writeLog "🔄 Iniciando a replicação com dados MAIOR QUE '$LAST_UPDATED_AT'"
 
     # Descobrindo o último ID
-    # LAST_ID=$("${PROD_PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
-    LAST_ID=$(echo "1.000" | tr -d '.')
-    writeLog "✅ Último ID de '$table_main' $(format_number $LAST_ID)"
+    # LAST_ID=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
+    # LAST_ID=$(echo "249.947.073" | tr -d '.')
+    LAST_ID=$(echo "1000" | tr -d '.')
+
+    writeLog "✅ Último ID de '$table_main': $(format_number $LAST_ID)"
     echo
 }
 
@@ -74,7 +77,7 @@ checkEnd() {
     if [[ $totalReplicated -gt 0 ]]; then
         $("${MONGO_CMD[@]}" --quiet --eval "db.$table_main.createIndex({ updated_at: 1 }, { sparse: true })" > /dev/null)
         writeLog "✅ Index 'updated_at' atualizado com sucesso."
-        writeLog "✅ Tabela '$table_main' replicada $FORCE_UPDATED_INDEX_MONGO com sucesso com '$(format_number $totalReplicated)' documentos no MongoDB em $(calculateExecutionTime)"
+        writeLog "✅ Tabela '$table_main' replicada $FORCE_UPDATED_INDEX_MONGO com sucesso no MongoDB em $(calculateExecutionTime)"
     fi
     writeLog "$(repeat_char '-')"
     writeLog "🏁 Replicação concluída com sucesso! em $(calculateExecutionTime)"
@@ -98,11 +101,14 @@ replicateWithSubcollections() {
     SQL+=" WHERE p1.id >= $start_id AND p1.id <= $end_id"
     [[ "$LAST_UPDATED_AT" > 0 ]] && SQL+=" AND p1.updated_at > '$LAST_UPDATED_AT'"
     SQL="SELECT row_to_json(t) FROM ( $SQL ) t;"
+    echo $SQL > "$DIR_CACHE/sql"
 
-    OUT=$("${PROD_PSQL_CMD[@]}" -t -A -F "" -c "$SQL" 2>&1)
+    writeLog "🔎 Aguarde a BUSCA da faixa $(format_number $start_id)/$(format_number $end_id) com $(format_number $dif_ids) linhas do postgreSQL"
+    OUT=$("${PSQL_CMD[@]}" -t -A -F "" -c "$SQL")
     if [[ -z "$OUT" ]]; then
         writeLog "📦 Nenhum dado retornado na faixa $start_id/$end_id"
     else
+        writeLog "🔎 Aguarde a INSERÇÃO da faixa $(format_number $start_id)/$(format_number $end_id) com $(format_number $dif_ids) linhas no mongoDB"
         echo "$OUT" | "${MONGOIMPORT_CMD[@]}" --collection "$table_main" --mode upsert --upsertFields _id --type json > /dev/null 2>&1
         if [[ $? -ne 0 ]]; then
             writeLog "❌ Erro ao importar lote OFFSET $offset. Abortando..."
@@ -115,21 +121,30 @@ replicateWithSubcollections() {
     fi
 }
 
-# Limbando o banco de dados no mongoDB
-clearDatabase
+clearDatabaseMongo
 
 checkStart
 
-pids=()
-chunk_size=$((LAST_ID / NUM_INSTANCES))
-for ((i=0; i<NUM_INSTANCES; i++)); do
-  start_id=$(( (i * chunk_size) + 1 ))
-  end_id=$(( (i + 1) * chunk_size ))
-  if [ $i -eq $((NUM_INSTANCES - 1)) ]; then
-    end_id=$LAST_ID
-  fi
-  replicateWithSubcollections $start_id $end_id &
-  pids+=($!)
+MAX_LOOP_PROCESSES=$(( $((LAST_ID / NUM_MAX_PER_TRACK)) +1))
+for (( a=1; a<=$MAX_LOOP_PROCESSES; a++ )); do
+    chunk_size=$((NUM_MAX_PER_TRACK * a))
+    start_loop=$(( (a-1) * NUM_MAX_PER_TRACK + 1 ))
+    end_loop=$(( a * NUM_MAX_PER_TRACK ))
+
+    [ $a -eq $MAX_LOOP_PROCESSES ] && end_loop=$LAST_ID
+
+    for ((i=0; i<NUM_INSTANCES; i++)); do
+        start_id=$(( start_loop + (i * (end_loop - start_loop + 1) / NUM_INSTANCES) ))
+        end_id=$(( start_loop + ((i + 1) * (end_loop - start_loop + 1) / NUM_INSTANCES) - 1 ))
+
+        [ $i -eq $((NUM_INSTANCES - 1)) ] && end_id=$end_loop
+
+        # writeLog "índice: $i start_id: $start_id end_id: $end_id"
+        replicateWithSubcollections $start_id $end_id &
+    done
+    wait
+    writeLog "📦 ID até $(format_number $end_id) processado com sucesso."
+    echo
 done
 wait
 
