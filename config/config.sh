@@ -15,8 +15,8 @@ if [[ ${#DATA_ORIGEM} -eq 0 ]]; then
   getLatestDir
   DATA_ORIGEM=$(cat .data_origem 2>/dev/null)
 fi
-
-# Atalho para conexão com o banco de dados no servidor de testes
+ 
+# Atalho para conexão com o banco de dados local
 readonly PSQL_CMD=(
   docker exec -i $POSTGRES_CONTAINER 
   psql
@@ -24,6 +24,7 @@ readonly PSQL_CMD=(
   -d "$POSTGRES_DB_DATABASE"
   -v PGPASSWORD="$POSTGRES_DB_PASSWORD"
 )
+# Atalho para conexão com o banco de dados remoto
 readonly PROD_PSQL_CMD=(
   docker exec -i -e PGPASSWORD="$PROD_POSTGRES_DB_PASSWORD" $POSTGRES_CONTAINER 
   psql 

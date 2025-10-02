@@ -1,3 +1,8 @@
+# Função para repetir caracter
+repeat_char() {
+  printf "%0.s$1" $(seq 1 ${2:-80})
+}
+
 # função para escrever LOGs
 writeLog() {
   local msg="$1"
@@ -109,9 +114,4 @@ getLatestDir() {
 
   export LATEST_DIR
   export LATEST_DATE
-}
-
-# Função para repetir caracter
-repeat_char() {
-  printf "%0.s$1" $(seq 1 ${2:-80})
 }
