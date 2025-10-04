@@ -70,7 +70,7 @@ checkStart() {
     # LAST_ID_TO_IMPORT=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
     # LAST_ID_TO_IMPORT=$(echo "255.000" | tr -d '.')
     # LAST_ID_TO_IMPORT=$(echo "20.000" | tr -d '.')
-    LAST_ID_TO_IMPORT=$(echo "20" | tr -d '.')
+    LAST_ID_TO_IMPORT=$(echo "150" | tr -d '.')
 
     writeLog "✅ Último ID de '$table_main': $(format_number $LAST_ID_TO_IMPORT)"
     echo ""
@@ -78,11 +78,7 @@ checkStart() {
 
 checkEnd() {
     local total_mongo=$("${MONGO_CMD[@]}" --quiet --eval "db.$table_main.countDocuments()")
-    local total_replicated=$(cat "/tmp/total_replicated")
-
-    [ "$total_replicated" -gt 0 ] && writeLog "✅ $(format_number $total_replicated) documentos atualizados com sucesso."
     writeLog "✅ $(format_number $total_mongo) documentos no mongoDB no total."
-
     writeLog "$(repeat_char '-')"
     writeLog "🏁 Replicação concluída com sucesso! em $(calculateExecutionTime)"
 }
@@ -106,7 +102,6 @@ replicateWithSubcollections() {
     [[ "$LAST_UPDATED_AT" > 0 ]] && SQL+=" AND p1.updated_at > '$LAST_UPDATED_AT'"
     SQL+=" ORDER BY p1.id"
     SQL="SELECT row_to_json(t) FROM ( $SQL ) t;"
-    echo "$SQL" > "$DIR_CACHE/last_sql_to_import"
 
     writeLog "🔎 Aguarde a BUSCA da faixa $(format_number $start_id)/$(format_number $end_id) com $(format_number $dif_ids) linhas no postgreSQL remoto..."
     OUT=$("${PROD_PSQL_CMD[@]}" -t -A -F "" -c "$SQL")
@@ -119,8 +114,7 @@ replicateWithSubcollections() {
             writeLog "❌ Erro ao importar lote OFFSET $offset. Abortando..."
             exit 1
         fi
-        ((TOTAL_REPLICATED+=$dif_ids))
-        echo "$TOTAL_REPLICATED" > "/tmp/total_replicated"
+
         # salva o maior ID replicado no mongoDB
         [ $end_id -gt $(cat "$DIR_CACHE/replicate_last_saved_id" 2>/dev/null || echo 0) ] && echo "$end_id" > "$DIR_CACHE/replicate_last_saved_id"
 
