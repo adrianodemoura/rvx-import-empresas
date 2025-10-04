@@ -36,11 +36,20 @@ readonly PROD_PSQL_CMD=(
 
 # Atalho para conexão com o MongoDB (dentro do container)
 readonly MONGO_CMD=(
-  docker exec -i $MONGO_CONTAINER mongosh
-  --quiet
+  docker exec -i $MONGO_CONTAINER mongosh --quiet
   -u "$MONGODB_USER"
   -p "$MONGODB_PASSWORD"
   "$MONGODB_DATABASE"
+)
+
+# Atalho para conexão com o MongoDB Remoto
+readonly PROD_MONGO_CMD=(
+  docker exec -i $MONGO_CONTAINER mongosh --quiet
+  --host "$PROD_MONGODB_HOST"
+  --port "$PROD_MONGODB_PORT"
+  -u "$PROD_MONGODB_USER"
+  -p "$PROD_MONGODB_PASSWORD"
+  "$PROD_MONGODB_DATABASE"
 )
 
 # Atalho para conexão com o MongoDB Import (dentro do container)
