@@ -9,8 +9,8 @@ readonly MODULE_DIR="temporarias"
 readonly ORIGEM="estabelecimentos"
 readonly TABLES=("naturezas" "municipios" "paises" "motivos" "qualificacoes" "cnaes" "empresas" "socios" "simples" "estabelecimentos")
 
-writeLog "============================================================================================================================="
-writeLog "✅ Iniciando a importação CSV para as tabelas do Banco de Dados \"$POSTGRES_DB_DATABASE\" e o Schema \"$POSTGRES_DB_SCHEMA\""
+writeLog "$(repeat_char '=')"
+writeLog "✅ Iniciando a importação CSV para as tabelas do Banco de Dados '$POSTGRES_DB_DATABASE' e o Schema '$POSTGRES_DB_SCHEMA'"
 
 # Campos e quantidade de colunas por tabela
 declare -A TABLE_FIELDS=(
@@ -111,6 +111,6 @@ loopTables() {
 checkIndexTrigger
 
 # FIM
-echo "---------------------------------------------------------------------------"
+writeLog "$(repeat_char '-')"
 writeLog "✅ Fim da importação CSV para as tabelas do Schema \"$POSTGRES_DB_SCHEMA_TMP\" em $(calculateExecutionTime)"
-echo
+echo ""

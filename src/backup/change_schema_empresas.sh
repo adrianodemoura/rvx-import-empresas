@@ -7,7 +7,7 @@ tables=(pj_cnaes_list pj_qualificacoes_socios pj_empresas pj_empresas_cnaes pj_e
 
 writeLog "============================================================================================================================="
 writeLog "✅ Iniciando a TROCA de schema das tabelas de '$POSTGRES_DB_SCHEMA' para o schema '$POSTGRES_DB_SCHEMA_FINAL' "
-echo
+echo ""
 
 changeTablesSchemas() {
     for table in "${tables[@]}"; do
@@ -71,5 +71,5 @@ changeTablesSchemas
 
 # FIM
 echo "---------------------------------------------------------------------------"
-writeLog "✅ Troca de schema das tabelas do Schema \"$POSTGRES_DB_SCHEMA\" para o Schema '$POSTGRES_DB_SCHEMA_FINAL' finalizada em $(calculateExecutionTime $START_TIME_IMPORT)"
+writeLog "✅ Troca de schema das tabelas do Schema '$POSTGRES_DB_SCHEMA' para o Schema '$POSTGRES_DB_SCHEMA_FINAL' finalizada em $(calculateExecutionTime $START_TIME_IMPORT)"
 echo
