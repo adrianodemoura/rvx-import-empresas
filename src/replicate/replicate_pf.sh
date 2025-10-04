@@ -69,10 +69,10 @@ checkStart() {
     writeLog "🔎 Último ID já importado: $(format_number $LAST_SAVED_ID)"
 
     # Descobrindo o último ID no postgres
-    LAST_ID_TO_IMPORT=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
-    # LAST_ID_TO_IMPORT=$(echo "250.000" | tr -d '.')
+    # LAST_ID_TO_IMPORT=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
+    # LAST_ID_TO_IMPORT=$(echo "255.000" | tr -d '.')
     # LAST_ID_TO_IMPORT=$(echo "20.000" | tr -d '.')
-    # LAST_ID_TO_IMPORT=$(echo "33" | tr -d '.')
+    LAST_ID_TO_IMPORT=$(echo "20" | tr -d '.')
 
     writeLog "✅ Último ID de '$table_main': $(format_number $LAST_ID_TO_IMPORT)"
     echo ""
@@ -114,7 +114,7 @@ replicateWithSubcollections() {
     SQL+=" ORDER BY p1.id"
     [[ "$LAST_UPDATED_AT" > 0 ]] && SQL+=" AND p1.updated_at > '$LAST_UPDATED_AT'"
     SQL="SELECT row_to_json(t) FROM ( $SQL ) t;"
-    echo $SQL > "$DIR_CACHE/replicate_last_sql"
+    # echo $SQL > "$DIR_CACHE/replicate_last_sql"
 
     writeLog "🔎 Aguarde a BUSCA da faixa $(format_number $start_id)/$(format_number $end_id) com $(format_number $dif_ids) linhas no postgreSQL remoto..."
     OUT=$("${PROD_PSQL_CMD[@]}" -t -A -F "" -c "$SQL")
@@ -135,7 +135,7 @@ replicateWithSubcollections() {
     fi
 }
 
-clearDatabaseMongo
+# clearDatabaseMongo
 
 checkStart
 
