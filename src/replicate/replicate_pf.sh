@@ -45,7 +45,7 @@ readonly tables=(
 
 writeLog "$(repeat_char '=')"
 writeLog "✅ Iniciando replicação de '$POSTGRES_DB_HOST.$POSTGRES_DB_DATABASE.$POSTGRES_DB_SCHEMA_FINAL' para '$MONGODB_HOST.$MONGODB_DATABASE'..."
-echo
+echo ""
 
 clearDatabaseMongo() {
     local OUTPUT=$("${MONGO_CMD[@]}" --quiet --eval "db.dropDatabase()")
@@ -75,7 +75,7 @@ checkStart() {
     # LAST_ID_TO_IMPORT=$(echo "33" | tr -d '.')
 
     writeLog "✅ Último ID de '$table_main': $(format_number $LAST_ID_TO_IMPORT)"
-    echo
+    echo ""
 }
 
 checkEnd() {
@@ -165,7 +165,7 @@ for (( a=1; a<=$MAX_LOOP_PROCESSES; a++ )); do
     wait
     [ "$skip_loop_a" = true ] &&  { continue; }
     writeLog "📦 ID até $(format_number $end_id) processado com sucesso em $(calculateExecutionTime)."
-    echo
+    echo ""
 done
 
 checkEnd
