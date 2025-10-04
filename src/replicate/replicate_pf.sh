@@ -57,8 +57,7 @@ clearDatabaseMongo() {
 
 checkStart() {
     # Descobrindo o último ID no postgres
-    # LAST_ID_TO_IMPORT=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
-    LAST_ID_TO_IMPORT=1000
+    LAST_ID_TO_IMPORT=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
     writeLog "🏁 Último ID de '$table_main': $(format_number $LAST_ID_TO_IMPORT)"
 
     # recuperando o último ID SALVO
