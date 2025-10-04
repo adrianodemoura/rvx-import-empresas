@@ -29,7 +29,8 @@ start_container $POSTGRES_CONTAINER "docker run --restart=always -d --name $POST
   -v $POSTGRES_DIR_DATA:/var/lib/postgresql/data \
   -p $POSTGRES_DB_PORT:5432 \
   postgres:14.2-alpine \
-  -c max_wal_size=3GB"
+  -c max_wal_size=3GB \
+  -c idle_session_timeout=3000000"
 
 # MongoDB
 start_container $MONGO_CONTAINER "docker run --restart=always -d --name $MONGO_CONTAINER \

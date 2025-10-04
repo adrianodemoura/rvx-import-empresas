@@ -8,6 +8,7 @@ LOG_NAME="import_pf"
 readonly MODULE_DIR="bigdata"
 readonly PF_ORIGEM="bigdata_final"
 readonly PF_DATA_ORIGEM=$(date +%F)
+readonly TABLES=(pf_pessoas pf_telefones pf_emails)
 readonly TABLES=(
     pf_pessoas 
     pf_telefones 
@@ -57,24 +58,25 @@ echo
 
 copyDataFromRemote() {
     local table="$1"
-    local BATCH_SIZE=$(echo "1.000.000" | tr -d '.')
-    local MAX_RECORDS=$(echo "1.000.000.000" | tr -d '.')
+    # local BATCH_SIZE=$(echo "10.000.000" | tr -d '.') MAX_RECORDS=$(echo "300.000.000" | tr -d '.')
+    local BATCH_SIZE=$(echo "10" | tr -d '.') MAX_RECORDS=$(echo "300" | tr -d '.')
     local OFFSET=0
     local RECORDS_IMPORTED=0
     local RESULT=""
 
-    local EXISTS=$("${PSQL_CMD[@]}" -A -c "SELECT EXISTS (SELECT 1 FROM $POSTGRES_DB_SCHEMA_FINAL.$table)" | tail -n 2 | grep -oE "(t|f)")
-    [ "$EXISTS" == "t" ] && { writeLog "🏁 Tabela '$table' já está populada. Ignorando importação."; return; }
+    # local EXISTS=$("${PSQL_CMD[@]}" -A -c "SELECT EXISTS (SELECT 1 FROM $POSTGRES_DB_SCHEMA_FINAL.$table)" | tail -n 2 | grep -oE "(t|f)")
+    # [ "$EXISTS" == "t" ] && { writeLog "🏁 Tabela '$table' já está populada. Ignorando importação."; return; }
 
     while true; do
         local START_TIME_COPY=$(date +%s%3N)
-        writeLog "🔎 Buscando os dados da tabela '$table' no remoto...."
-        local DATA=$("${PROD_PSQL_CMD[@]}" -c "\copy (SELECT * FROM $PROD_POSTGRES_DB_SCHEMA.$table LIMIT $BATCH_SIZE OFFSET $OFFSET) TO STDOUT WITH CSV HEADER")
-        [ -z "$DATA" ] && { writeLog "✅ Não há mais dados para copiar da tabela '$table'."; break; }
+        writeLog "🔎 Buscando $(format_number $BATCH_SIZE) linhas na tabela '$table' no remoto...."
+        # local DATA=$("${PROD_PSQL_CMD[@]}" -c "\copy (SELECT * FROM $PROD_POSTGRES_DB_SCHEMA.$table LIMIT $BATCH_SIZE OFFSET $OFFSET) TO STDOUT WITH CSV HEADER")
+        # [ -z "$DATA" ] && { writeLog "✅ Não há mais dados para copiar da tabela '$table'."; break; }
 
-        writeLog "📥 Inserindo os dados da tabela '$table' no local..."
-        RESULT=$(echo "$DATA" | "${PSQL_CMD[@]}" -c "\copy $POSTGRES_DB_SCHEMA_FINAL.$table FROM STDIN WITH CSV HEADER")
-        [ $? -ne 0 ] && { writeLog "❌ Erro ao copiar dados da tabela '$table' do remoto para o local"; exit 1; }
+        writeLog "📥 Inserindo $(format_number $BATCH_SIZE) linhas na tabela '$table' no local..."
+        RESULT=$BATCH_SIZE
+        # RESULT=$(echo "$DATA" | "${PSQL_CMD[@]}" -c "\copy $POSTGRES_DB_SCHEMA_FINAL.$table FROM STDIN WITH CSV HEADER")
+        # [ $? -ne 0 ] && { writeLog "❌ Erro ao copiar dados da tabela '$table' do remoto para o local"; exit 1; }
 
         RECORDS_IMPORTED=$((RECORDS_IMPORTED + $(echo "$RESULT" | grep -oE '[0-9]+')))
         OFFSET=$((OFFSET + BATCH_SIZE))
