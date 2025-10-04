@@ -2,10 +2,10 @@
 source "./config/config.sh"
 LOG_NAME='replicate'
 
-LAST_ID_TO_IMPORT=$(echo "1.000" | tr -d '.')
-SALT_ID_TO_IMPORT=$(echo "100" | tr -d '.')
+LAST_ID_TO_IMPORT=0
 LAST_UPDATED_AT=0
 LAST_SAVED_ID=0
+readonly SALT_ID_TO_IMPORT=10000
 readonly NUM_INSTANCES=10
 readonly table_main='pf_pessoas'
 readonly tables=(
@@ -57,7 +57,8 @@ clearDatabaseMongo() {
 
 checkStart() {
     # Descobrindo o último ID no postgres
-    LAST_ID_TO_IMPORT=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
+    # LAST_ID_TO_IMPORT=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
+    LAST_ID_TO_IMPORT=1000
     writeLog "🏁 Último ID de '$table_main': $(format_number $LAST_ID_TO_IMPORT)"
 
     # recuperando o último ID SALVO
@@ -123,7 +124,7 @@ replicateWithSubcollections() {
     fi
 }
 
-clearDatabaseMongo
+# clearDatabaseMongo
 
 checkStart
 
