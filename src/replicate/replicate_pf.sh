@@ -69,8 +69,8 @@ checkStart() {
     writeLog "🔎 Último ID já importado: $(format_number $LAST_SAVED_ID)"
 
     # Descobrindo o último ID no postgres
-    # LAST_ID_TO_IMPORT=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
-    LAST_ID_TO_IMPORT=$(echo "250.000" | tr -d '.')
+    LAST_ID_TO_IMPORT=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT id FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main ORDER BY id DESC LIMIT 1")
+    # LAST_ID_TO_IMPORT=$(echo "250.000" | tr -d '.')
     # LAST_ID_TO_IMPORT=$(echo "20.000" | tr -d '.')
     # LAST_ID_TO_IMPORT=$(echo "33" | tr -d '.')
 
