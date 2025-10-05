@@ -30,7 +30,7 @@ start_container $POSTGRES_CONTAINER "docker run --restart=always -d --name $POST
   -p $POSTGRES_DB_PORT:5432 \
   postgres:14.2-alpine \
   -c max_wal_size=3GB \
-  -c idle_session_timeout=3000000"
+  -c idle_session_timeout=500000" # 30 segundos
 
 # MongoDB
 start_container $MONGO_CONTAINER "docker run --restart=always -d --name $MONGO_CONTAINER \
