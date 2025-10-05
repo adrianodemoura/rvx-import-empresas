@@ -53,7 +53,7 @@ readonly PROD_PG_DUMP=(
 
 writeLog "$(repeat_char '=')"
 writeLog "✅ Iniciando a importação das tabelas PF para o Banco de Dados '$PROD_POSTGRES_DB_DATABASE' e o Schema '$PROD_POSTGRES_DB_SCHEMA'"
-echo
+echo ""
 
 copyDataFromRemote() {
     local table="$1"
@@ -93,7 +93,7 @@ copyDataFromRemote() {
         OFFSET=$((OFFSET + BATCH_SIZE))
         writeLog "✅ $(format_number $BATCH_SIZE) registros copiadas da tabela '$table' do remoto para o local em $(calculateExecutionTime $START_TIME_COPY)"
         [ $RECORDS_IMPORTED -ge $MAX_RECORDS ] && {
-            writeLog "✅ Máximo de registros alcançado $(format_number $MAX_RECORDS). Parando a importação da tabela '$table'.";
+            writeLog "✅ $(format_number $MAX_RECORDS) registros alcançado. Parando a importação da tabela '$table'.";
             break;
         }
     done
