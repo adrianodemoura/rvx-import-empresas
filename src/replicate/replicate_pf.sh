@@ -97,7 +97,7 @@ replicateWithSubcollections() {
     done
     SQL+=" FROM $POSTGRES_DB_SCHEMA_FINAL.$table_main p1"
     SQL+=" WHERE p1.id >= $start_id AND p1.id <= $end_id"
-    [[ "$LAST_UPDATED_AT" > 0 && LAST_SAVED_ID == 0 ]] && SQL+=" AND p1.updated_at > '$LAST_UPDATED_AT'"
+    [[ "$LAST_UPDATED_AT" > 0 && $LAST_SAVED_ID == 0 ]] && SQL+=" AND p1.updated_at > '$LAST_UPDATED_AT'"
     SQL+=" ORDER BY p1.id"
 
     # Configurando para retornar JSON
