@@ -121,14 +121,15 @@ replicateWithSubcollections() {
     # ============================================================
     # 🚀 Execução
     # ============================================================
-    writeLog "🔎 Buscando faixa $(format_number $start_id)/$(format_number $end_id) com $(format_number $dif_ids) linhas..."
+    writeLog "🔎 Aguarde a busca da faixa $(format_number $start_id)/$(format_number $end_id) com $(format_number $dif_ids) linhas..."
     OUT=$("${PSQL_CMD[@]}" -t -A -F "" -c "$SQL")
     echo "$OUT" > "$DIR_CACHE/replicate_last_out"
+    writeLog "✅ Busca da faixa $(format_number $start_id)/$(format_number $end_id) com $(format_number $dif_ids) linhas executada com sucesso em $(calculateExecutionTime $START_TIME_REPLICATE)"
 
     if [[ -z "$OUT" ]]; then
         writeLog "📦 Nenhum dado retornado na faixa $(format_number $start_id)/$(format_number $end_id)."
     else
-        writeLog "📦 $([ "$EXECUTION_MODE" == "update" ] && echo "Atualizando" || echo "Inserindo") a faixa $(format_number $start_id)/$(format_number $end_id)..."
+        writeLog "📦 $([ "$EXECUTION_MODE" == "update" ] && echo "Atualizando" || echo "Replicando") a faixa $(format_number $start_id)/$(format_number $end_id)..."
         echo "$OUT" | "${MONGOIMPORT_CMD[@]}" \
             --collection "$table_main" \
             --mode upsert \
