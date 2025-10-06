@@ -57,8 +57,7 @@ echo ""
 
 copyDataFromRemote() {
     local table="$1"
-    # local BATCH_SIZE=$(echo "10.000.000" | tr -d '.') MAX_RECORDS=$(echo "300.000.000" | tr -d '.')
-    local BATCH_SIZE=$(echo "1000" | tr -d '.') MAX_RECORDS=$(echo "3000" | tr -d '.')
+    local BATCH_SIZE=$(echo "10.000.000" | tr -d '.') MAX_RECORDS=$(echo "300.000.000" | tr -d '.')
     local OFFSET=0
     local RECORDS_IMPORTED=0
     local RESULT=""
@@ -72,7 +71,7 @@ copyDataFromRemote() {
 
         local SQL="SELECT * 
             FROM $PROD_POSTGRES_DB_SCHEMA.$table 
-            ORDER BY $table.cpf
+            ORDER BY $table.id
             LIMIT $BATCH_SIZE 
             OFFSET $OFFSET"
 
