@@ -1,25 +1,30 @@
 # Função para repetir caracter
 repeat_char() {
-  printf "%0.s$1" $(seq 1 ${2:-80})
+  printf "%0.s$1" $(seq 1 ${2:-99})
 }
 
 # função para escrever LOGs
 writeLog() {
+  [ $DEBUG == '0' ] && { return; }
   local msg="$1"
   local type="${2:-${LOG_NAME:-undefined}}"  # fallback encadeado
   local output="${3:-true}"
 
-  mkdir -p "$DIR_LOG"
+  # Só escreve no disco se o LOG está ativado
+  if [ "$LOG" = "1" ]; then
+    mkdir -p "$DIR_LOG"
 
-  # Data atual no formato ANO_MES_DIA
-  local log_date
-  log_date=$(date +'%Y_%m_%d')
+    # Data atual no formato ANO_MES_DIA
+    local log_date=$(date +'%Y_%m_%d')
 
-  # Nome do arquivo com data + tipo
-  local log_file="$DIR_LOG/${log_date}_$type.log"
+    # Nome do arquivo com data + tipo
+    local log_file="$DIR_LOG/${log_date}_$type.log"
 
-  # Escreve a mensagem com timestamp de precisão milissegundos
-  echo "[$(date +'%Y-%m-%d %H:%M:%S.%3N')] $msg" >> "$log_file"
+    # Escreve a mensagem com timestamp de precisão milissegundos
+    echo "[$(date +'%Y-%m-%d %H:%M:%S.%3N')] $msg" >> "$log_file"
+  fi
+
+  # Printa no console
   if [ "$output" = "true" ]; then
     echo "$msg"
   fi
