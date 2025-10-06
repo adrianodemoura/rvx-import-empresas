@@ -2,12 +2,8 @@
 #
 source "./config/config.sh"
 
-CHECK_DB_SCHEMA=true
-CHECK_INDEX_TRIGGER=false
 LOG_NAME="import_pf"
 readonly MODULE_DIR="bigdata"
-readonly PF_ORIGEM="bigdata_final"
-readonly PF_DATA_ORIGEM=$(date +%F)
 readonly TABLES=(
     pf_pessoas 
     pf_telefones 
@@ -57,8 +53,8 @@ echo ""
 
 copyDataFromRemote() {
     local table="$1"
-    local BATCH_SIZE=$(echo "1.000.000" | tr -d '.') MAX_RECORDS=$(echo "300.000.000" | tr -d '.')
-    # local BATCH_SIZE=$(echo "20000" | tr -d '.') MAX_RECORDS=$(echo "100000" | tr -d '.')
+    # local BATCH_SIZE=$(echo "1.000.000" | tr -d '.') MAX_RECORDS=$(echo "300.000.000" | tr -d '.')
+    local BATCH_SIZE=$(echo "20000" | tr -d '.') MAX_RECORDS=$(echo "100000" | tr -d '.')
     local OFFSET=0 RESULT="" RECORDS_IMPORTED=0
 
     local EXISTS=$("${PSQL_CMD[@]}" -A -c "SELECT EXISTS (SELECT 1 FROM $POSTGRES_DB_SCHEMA_FINAL.$table)" | tail -n 2 | grep -oE "(t|f)")
@@ -112,6 +108,7 @@ createTableFromRemote() {
         writeLog "❌ Não consegui extrair DDL da tabela '$table' no remoto"
         exit 1
     fi
+    DDL="${DDL//\bigdata_final/$POSTGRES_DB_SCHEMA_FINAL}"
 
     writeLog "📦 Criando a tabela '$table' no local..."
     echo "$DDL" | "${PSQL_CMD[@]}" > /dev/null 2>&1
@@ -124,16 +121,12 @@ createTableFromRemote() {
     echo ""
 }
 
-importPfTables() {
-    for table in "${TABLES[@]}"; do
-        createTableFromRemote "$table"
-        copyDataFromRemote "$table"
-    done
-}
-
 source "./src/util/database/check_db.sh" $POSTGRES_DB_SCHEMA_FINAL
 
-importPfTables
+for table in "${TABLES[@]}"; do
+    createTableFromRemote "$table"
+    copyDataFromRemote "$table"
+done
 
 source "./src/util/database/check_indexes.sh" "$POSTGRES_DB_SCHEMA_FINAL"
 source "./src/util/database/check_triggers.sh" "$POSTGRES_DB_SCHEMA_FINAL"
