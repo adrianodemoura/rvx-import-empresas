@@ -57,10 +57,9 @@ echo ""
 
 copyDataFromRemote() {
     local table="$1"
-    local BATCH_SIZE=$(echo "10.000.000" | tr -d '.') MAX_RECORDS=$(echo "300.000.000" | tr -d '.')
-    local OFFSET=0
-    local RECORDS_IMPORTED=0
-    local RESULT=""
+    # local BATCH_SIZE=$(echo "1.000.000" | tr -d '.') MAX_RECORDS=$(echo "300.000.000" | tr -d '.')
+    local BATCH_SIZE=$(echo "10" | tr -d '.') MAX_RECORDS=$(echo "100" | tr -d '.')
+    local OFFSET=0 RESULT="" RECORDS_IMPORTED=0
 
     local EXISTS=$("${PSQL_CMD[@]}" -A -c "SELECT EXISTS (SELECT 1 FROM $POSTGRES_DB_SCHEMA_FINAL.$table)" | tail -n 2 | grep -oE "(t|f)")
     [ "$EXISTS" == "t" ] && { writeLog "🏁 Tabela '$table' já está populada. Ignorando importação."; return; }
@@ -138,6 +137,10 @@ importPfTables() {
 source "./src/util/database/check_db.sh" $POSTGRES_DB_SCHEMA_FINAL
 
 importPfTables
+
+source "./src/util/database/check_indexes.sh" "$POSTGRES_DB_SCHEMA_FINAL"
+source "./src/util/database/check_triggers.sh" "$POSTGRES_DB_SCHEMA_FINAL"
+source "./src/util/database/check_constraints.sh" "$POSTGRES_DB_SCHEMA_FINAL"
 
 writeLog "$(repeat_char '-')"
 writeLog "✅ Fim da importação Pessoas em $(calculateExecutionTime)"
