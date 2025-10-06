@@ -57,16 +57,16 @@ echo ""
 
 copyDataFromRemote() {
     local table="$1"
-    # local BATCH_SIZE=$(echo "1.000.000" | tr -d '.') MAX_RECORDS=$(echo "300.000.000" | tr -d '.')
-    local BATCH_SIZE=$(echo "10" | tr -d '.') MAX_RECORDS=$(echo "100" | tr -d '.')
+    local BATCH_SIZE=$(echo "1.000.000" | tr -d '.') MAX_RECORDS=$(echo "300.000.000" | tr -d '.')
+    # local BATCH_SIZE=$(echo "20000" | tr -d '.') MAX_RECORDS=$(echo "100000" | tr -d '.')
     local OFFSET=0 RESULT="" RECORDS_IMPORTED=0
 
     local EXISTS=$("${PSQL_CMD[@]}" -A -c "SELECT EXISTS (SELECT 1 FROM $POSTGRES_DB_SCHEMA_FINAL.$table)" | tail -n 2 | grep -oE "(t|f)")
     [ "$EXISTS" == "t" ] && { writeLog "🏁 Tabela '$table' já está populada. Ignorando importação."; return; }
 
+    writeLog "✅ Iniciando a cópia da tabela '$table'..."
     while true; do
         local START_TIME_COPY=$(date +%s%3N)
-        writeLog "🔎 $(format_number $BATCH_SIZE) linhas recuperadas na tabela '$table' no remoto...."
 
         local SQL="SELECT * 
             FROM $PROD_POSTGRES_DB_SCHEMA.$table 
@@ -76,26 +76,23 @@ copyDataFromRemote() {
 
         local DATA=$("${PROD_PSQL_CMD[@]}" -c "\copy ( $SQL ) TO STDOUT WITH CSV HEADER")
         [ -z "$DATA" ] && {
-            writeLog "✅ Não há mais dados para copiar da tabela '$table'.";
+            writeLog "❎ Não há mais dados para copiar da tabela '$table'.";
             break;
         }
+        writeLog "🔎 $(format_number $BATCH_SIZE) linhas recuperadas na tabela '$table' no remoto em $(calculateExecutionTime $START_TIME_COPY)"
 
-        writeLog "📥 $(format_number $BATCH_SIZE) linhas inseridas na tabela '$table' no local..."
         RESULT=$(echo "$DATA" | "${PSQL_CMD[@]}" -c "\copy $POSTGRES_DB_SCHEMA_FINAL.$table FROM STDIN WITH CSV HEADER")
         [ $? -ne 0 ] && {
             writeLog "❌ Erro ao copiar dados da tabela '$table' do remoto para o local"; 
             exit 1;
         }
+        writeLog "📥 $(format_number $BATCH_SIZE) linhas inseridas na tabela '$table' no local em $(calculateExecutionTime $START_TIME_COPY)"
 
         RECORDS_IMPORTED=$((RECORDS_IMPORTED + $(echo "$RESULT" | grep -oE '[0-9]+')))
         OFFSET=$((OFFSET + BATCH_SIZE))
-        writeLog "✅ $(format_number $BATCH_SIZE) registros copiadas da tabela '$table' do remoto para o local em $(calculateExecutionTime $START_TIME_COPY)"
-        [ $RECORDS_IMPORTED -ge $MAX_RECORDS ] && {
-            writeLog "✅ $(format_number $MAX_RECORDS) registros alcançado. Parando a importação da tabela '$table'.";
-            break;
-        }
+        [ $RECORDS_IMPORTED -ge $MAX_RECORDS ] && { break; }
     done
-    writeLog "✅ $(format_number $RECORDS_IMPORTED) registros da tabela copiados com sucesso em $(calculateExecutionTime)"
+    writeLog "✅ $(format_number $RECORDS_IMPORTED) registros da tabela '$table' copiados com sucesso em $(calculateExecutionTime)"
     echo ""
 }
 
@@ -105,7 +102,7 @@ createTableFromRemote() {
 
     local TABLE_EXISTS=$("${PSQL_CMD[@]}" -c "SELECT 1 FROM pg_tables WHERE schemaname = '$POSTGRES_DB_SCHEMA_FINAL' AND tablename = '$table'" | grep -q 1 && echo true || echo false)
     if [[ "$TABLE_EXISTS" != "false" ]]; then
-        writeLog "✅ Tabela '$table' já existe no local, pulando criação..."
+        writeLog "🏁 Tabela '$table' já existe no local, pulando criação..."
         return
     fi
 
