@@ -4,14 +4,6 @@ source "./config/config.sh"
 
 LOG_NAME="import_pf"
 readonly MODULE_DIR="bigdata"
-readonly PROD_PG_DUMP=(
-  docker exec -i -e PGPASSWORD="$PROD_POSTGRES_DB_PASSWORD" $POSTGRES_CONTAINER 
-  pg_dump 
-  -p "$PROD_POSTGRES_DB_PORT"
-  -h "$PROD_POSTGRES_DB_HOST" 
-  -U "$PROD_POSTGRES_DB_USER" 
-  -d "$PROD_POSTGRES_DB_DATABASE"
-)
 
 writeLog "$(repeat_char '=')"
 writeLog "✅ Iniciando a importação das tabelas PF para o Banco de Dados '$PROD_POSTGRES_DB_DATABASE' e o Schema '$PROD_POSTGRES_DB_SCHEMA'"

@@ -25,10 +25,20 @@ readonly PSQL_CMD=(
   -d "$POSTGRES_DB_DATABASE"
   -v PGPASSWORD="$POSTGRES_DB_PASSWORD"
 )
-# Atalho para conexão com o banco de dados remoto
+
+# Atalho para conexão com o banco de dados REMOTO
 readonly PROD_PSQL_CMD=(
   docker exec -i -e PGPASSWORD="$PROD_POSTGRES_DB_PASSWORD" $POSTGRES_CONTAINER 
   psql 
+  -p "$PROD_POSTGRES_DB_PORT"
+  -h "$PROD_POSTGRES_DB_HOST" 
+  -U "$PROD_POSTGRES_DB_USER" 
+  -d "$PROD_POSTGRES_DB_DATABASE"
+)
+# Atalho para conexão com o banco de dados REMOTO PG_DUMP
+readonly PROD_PG_DUMP=(
+  docker exec -i -e PGPASSWORD="$PROD_POSTGRES_DB_PASSWORD" $POSTGRES_CONTAINER 
+  pg_dump 
   -p "$PROD_POSTGRES_DB_PORT"
   -h "$PROD_POSTGRES_DB_HOST" 
   -U "$PROD_POSTGRES_DB_USER" 
