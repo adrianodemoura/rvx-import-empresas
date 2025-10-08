@@ -5,6 +5,7 @@
 START_TIME=$(date +%s%3N)
 
 # Carrega as variáveis de ambiente do arquivo .env e .local
+source "./config/tables.sh"
 source "./src/util/global.sh"
 loadEnv ".env.local"
 LOG_NAME="${DB_SCHEMA,,}"

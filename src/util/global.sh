@@ -120,3 +120,35 @@ getLatestDir() {
   export LATEST_DIR
   export LATEST_DATE
 }
+
+# Função para recupear os atributos de uma tabela
+getTableAttr() {
+  local table_name="$1"
+  local attr="$2"
+
+  # percorre todas as entradas da constante TABLES
+  for entry in "${TABLES[@]}"; do
+    local table="${entry%%.*}"
+    local rest="${entry#*.}"
+
+    [ "$attr" == "name" ] && { echo $table; return 0; }
+
+    if [[ "$table" == "$table_name" ]]; then
+      [ "$attr" == "nick" ] && { echo $(echo "$entry" | cut -d '.' -f 2 | cut -d ' ' -f 1); return 0; }
+
+      # procura o trecho do atributo solicitado, exemplo: fields. ou indexes.
+      local value
+      value=$(echo "$rest" | grep -oP "${attr}\.[^ ]+" | sed "s/${attr}\.//")
+      if [[ -n "$value" ]]; then
+        echo "$value"
+        return 0
+      else
+        echo ""  # não encontrado
+        return 1
+      fi
+    fi
+  done
+
+  echo "❌ Tabela '$table_name' não encontrada" >&2
+  return 1
+}

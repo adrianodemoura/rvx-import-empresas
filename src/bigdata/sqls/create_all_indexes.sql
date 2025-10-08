@@ -60,6 +60,35 @@ BEGIN
         CREATE INDEX IF NOT EXISTS idx_pf_pessoas_cpf ON {schema}.pf_pessoas USING btree (cpf);
         CREATE INDEX IF NOT EXISTS idx_pf_pessoas_nome ON {schema}.pf_pessoas USING btree (nome);
         CREATE INDEX IF NOT EXISTS idx_pf_pessoas_cpf_basico ON {schema}.pf_pessoas USING btree (cpf_basico);
+
+        CREATE INDEX IF NOT EXISTS idx_pf_cbo_cpf ON {schema}.pf_cbo USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_governos_cpf ON {schema}.pf_governos USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_banco_gov_cpf ON {schema}.pf_banco_gov USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_enderecos_cpf ON {schema}.pf_enderecos USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_bolsa_familia_cpf ON {schema}.pf_bolsa_familia USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_classe_social_cpf ON {schema}.pf_classe_social USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_escolaridade_cpf ON {schema}.pf_escolaridade USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_carteira_trabalho_cpf ON {schema}.pf_carteira_trabalho USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_score_cpf ON {schema}.pf_score USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_capacidade_pagamento_cpf ON {schema}.pf_capacidade_pagamento USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_fgts_cpf ON {schema}.pf_fgts USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_imoveis_ibge_cpf ON {schema}.pf_imoveis_ibge USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_modelo_analitico_credito_cpf ON {schema}.pf_modelo_analitico_credito USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_nacionalidade_cpf ON {schema}.pf_nacionalidade USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_obitos_cpf ON {schema}.pf_obitos USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_persona_demografica_cpf ON {schema}.pf_persona_demografica USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_propensao_pagamento_cpf ON {schema}.pf_propensao_pagamento USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_renda_cpf ON {schema}.pf_renda USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_pis_cpf ON {schema}.pf_pis USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_poder_aquisitivo_cpf ON {schema}.pf_poder_aquisitivo USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_politicamente_exposta_cpf ON {schema}.pf_politicamente_exposta USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_score_digital_cpf ON {schema}.pf_score_digital USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_situacao_receita_cpf ON {schema}.pf_situacao_receita USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_titulo_eleitor_cpf ON {schema}.pf_titulo_eleitor USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_triagem_risco_cpf ON {schema}.pf_triagem_risco USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_veiculos_cpf ON {schema}.pf_veiculos USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_vinculo_empregaticio_cpf ON {schema}.pf_vinculo_empregaticio USING btree (cpf);
+        CREATE INDEX IF NOT EXISTS idx_pf_vinculos_familiares_cpf ON {schema}.pf_vinculos_familiares USING btree (cpf);
     END IF;
 
     -- pf_telefones
@@ -73,4 +102,5 @@ BEGIN
         CREATE INDEX IF NOT EXISTS idx_pf_emails_cpf ON {schema}.pf_emails USING btree (cpf);
         CREATE INDEX IF NOT EXISTS idx_pf_emails_email ON {schema}.pf_emails USING btree (email);
     END IF;
+
 END $$;

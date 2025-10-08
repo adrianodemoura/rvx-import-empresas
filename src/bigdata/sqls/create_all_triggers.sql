@@ -5,14 +5,17 @@ BEGIN
         SELECT 1
         FROM pg_proc p
         JOIN pg_namespace n ON n.oid = p.pronamespace
-        WHERE p.proname = 'set_updated_at'
-          AND n.nspname = '{schema}'
+        WHERE p.proname = 'set_updated_at' AND n.nspname = '{schema}'
     ) THEN
         EXECUTE $fn$
-            CREATE FUNCTION {schema}.set_updated_at()
-            RETURNS TRIGGER AS $body$
+            CREATE FUNCTION {schema}.set_updated_at() RETURNS TRIGGER AS $body$
+            DECLARE
+                dados text;
             BEGIN
                 NEW.updated_at = now();
+                RAISE NOTICE 'Notificando atualiza_mongo';
+                dados = row_to_json(NEW)::text;
+                PERFORM pg_notify('atualiza_mongo', dados);
                 RETURN NEW;
             END;
             $body$ LANGUAGE plpgsql;
@@ -85,10 +88,12 @@ $do$;
 DO $do$
 DECLARE
     tbls text[] := ARRAY[
-        'pj_empresas', 'pj_empresas_emails', 'pj_empresas_enderecos',
-        'pj_empresas_socios', 'pj_empresas_telefones', 'pj_empresas_cnaes',
-        'pj_cnaes_list', 'pj_qualificacoes_socios', 'pj_naturezas_juridicas',
-        'pf_pessoas', 'pf_emails', 'pf_telefones'
+        'pf_pessoas ', 'pf_telefones ', 'pf_emails ', 'pf_enderecos', 'pf_banco_gov', 'pf_bolsa_familia', 
+        'pf_capacidade_pagamento', 'pf_carteira_trabalho', 'pf_cbo', 'pf_classe_social', 'pf_escolaridade', 
+        'pf_fgts', 'pf_governos', 'pf_imoveis_ibge', 'pf_modelo_analitico_credito', 'pf_nacionalidade', 
+        'pf_obitos', 'pf_persona_demografica', 'pf_pis', 'pf_poder_aquisitivo', 'pf_politicamente_exposta', 
+        'pf_propensao_pagamento', 'pf_renda', 'pf_score', 'pf_score_digital', 'pf_situacao_receita', 
+        'pf_titulo_eleitor', 'pf_triagem_risco', 'pf_veiculos', 'pf_vinculo_empregaticio', 'pf_vinculos_familiares'
     ];
     t text;
 BEGIN
