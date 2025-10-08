@@ -91,15 +91,15 @@ copyPostgresToMongo() {
     SQL="$(getSQL)"
     echo $SQL > "$DIR_CACHE/${LOG_NAME}_LAST_SQL"
 
-    DATA=$("${PSQL_CMD[@]}" -t -A -c "$SQL")
-    [ -z "$DATA" ] && {
-        writeLog "❎ Fim dos dados em '$pg_table'."; 
-        break;
-    }
+    # DATA=$("${PSQL_CMD[@]}" -t -A -c "$SQL")
+    # [ -z "$DATA" ] && {
+    #     writeLog "❎ Fim dos dados em '$pg_table'."; 
+    #     break;
+    # }
     writeLog "🔎 Faixa $(format_number $LAST_OFFSET)/$(format_number $BATCH_SIZE) recuperada do PostgreSQL com sucesso em $(calculateExecutionTime $START_TIME)"
 
     # echo "$DATA" | "${MONGOIMPORT_CMD[@]}" --collection "$TABLE_MAIN" --mode upsert --upsertFields _id --type json > /dev/null 2>&1
-    # writeLog "✅ $(format_number $BATCH_SIZE) $(format_number $OFFSET) replicada para o MongoDB com sucesso em $(calculateExecutionTime $START_TIME)"
+    writeLog "✅ $(format_number $BATCH_SIZE) $(format_number $OFFSET) replicada para o MongoDB com sucesso em $(calculateExecutionTime $START_TIME)"
 
     # Salva o último OFFSET
     LAST_OFFSET=$(( $LAST_OFFSET + $BATCH_SIZE ))
