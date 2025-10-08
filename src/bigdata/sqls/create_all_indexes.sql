@@ -60,6 +60,7 @@ BEGIN
         CREATE INDEX IF NOT EXISTS idx_pf_pessoas_cpf ON {schema}.pf_pessoas USING btree (cpf);
         CREATE INDEX IF NOT EXISTS idx_pf_pessoas_nome ON {schema}.pf_pessoas USING btree (nome);
         CREATE INDEX IF NOT EXISTS idx_pf_pessoas_cpf_basico ON {schema}.pf_pessoas USING btree (cpf_basico);
+        CREATE INDEX IF NOT EXISTS idx_pf_pessoas_updated_at ON {schema}.pf_pessoas USING btree (updated_at);
 
         CREATE INDEX IF NOT EXISTS idx_pf_cbo_cpf ON {schema}.pf_cbo USING btree (cpf);
         CREATE INDEX IF NOT EXISTS idx_pf_governos_cpf ON {schema}.pf_governos USING btree (cpf);
