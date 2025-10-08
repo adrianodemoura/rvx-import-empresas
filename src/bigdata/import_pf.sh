@@ -22,7 +22,7 @@ copyDataFromRemote() {
     # local BATCH_SIZE=$(echo "1.000.000" | tr -d '.') MAX_RECORDS=$(echo "300.000.000" | tr -d '.')
     BATCH_SIZE=$(echo "1000000" | tr -d '.') MAX_RECORDS=$(echo "10000000" | tr -d '.')
     EXISTS=$("${PSQL_CMD[@]}" -A -c "SELECT EXISTS (SELECT 1 FROM $POSTGRES_DB_SCHEMA_FINAL.$table)" | tail -n 2 | grep -oE "(t|f)")
-    [ "$EXISTS" == "t" ] && { writeLog "🏁 Tabela '$table' já está populada. Ignorando importação."; return; }
+    [ "$EXISTS" == "t" ] && { writeLog "🏁 Tabela '$table' já está populada, ignorando importação."; return; }
 
     writeLog "✅ Iniciando a cópia da tabela '$table'..."
     RECORDS_IMPORTED=0
