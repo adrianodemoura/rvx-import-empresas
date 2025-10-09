@@ -2,8 +2,6 @@
 #
 source "./config/config.sh"
 
-POSTGRES_DB_SCHEMA_FINAL='bigdata_tmp'
-
 COUNT_LOOP=0
 LAST_OFFSET=0
 LAST_IMPORTED_AT=0
@@ -36,7 +34,6 @@ checkStart() {
     # Checando o último offset
     if [ "$EXECUTION_MODE" != "update" ]; then 
         LAST_OFFSET=$(cat "$FILE_OFFSET" 2>/dev/null || echo 0)
-        echo $LAST_OFFSET
     else
         LAST_IMPORTED_AT=$("${MONGO_CMD[@]}" --quiet --eval "db.getCollection('$TABLE_MAIN').findOne({}, { imported_at: 1, _id: 0 })?.imported_at" | sed 's/-[0-9]\{2\}:[0-9]\{2\}$//')
         LAST_IMPORTED_AT=${LAST_IMPORTED_AT:-1970-01-01}
@@ -107,7 +104,6 @@ copyFromPostgresPasteToMongo() {
 
     [ $LAST_OFFSET -gt $(cat "$FILE_OFFSET" 2>/dev/null || echo 0) ] && {
         echo "$(( $LAST_OFFSET + $BATCH_SIZE ))" > "$FILE_OFFSET";
-        echo "$SQL" > "${DIR_CACHE}/${LOG_NAME}_LAST_SQL"
     }
     writeLog "✅ "$COUNT_LOOP") Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) replicado com sucesso em $(calculateExecutionTime $START_TIME)"
 }
