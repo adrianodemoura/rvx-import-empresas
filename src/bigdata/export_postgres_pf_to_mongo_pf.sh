@@ -5,13 +5,14 @@ source "./config/config.sh"
 LAST_OFFSET=0
 LAST_IMPORTED_AT=0
 LIMIT_OFFSET_TO_IMPORT=0
+COUNT_LOOP=0
 readonly DATE_NOW=$(date +'%Y-%m-%d %H:%M:%S.%3N')
 readonly LOG_NAME="export_pf_from_postgres_to_mongodb"
 readonly FILE_OFFSET="${LOG_NAME}_LAST_OFFSET"
 readonly FILE_IMPORTED="${LOG_NAME}_LAST_IMPORTED_AT"
 readonly EXECUTION_MODE="${1:-update}"
 readonly BATCH_SIZE=$(echo "1.000.000" | tr -d '.' )
-readonly NUM_INSTANCES=20
+readonly NUM_INSTANCES=10
 readonly TABLE_MAIN='pf_pessoas'
 
 writeLog "$(repeat_char '=')"
@@ -39,9 +40,8 @@ checkStart() {
     fi
 
     writeLog "🏁 OFFSET inicial de '$TABLE_MAIN': $(format_number $LAST_OFFSET)"
-    # LIMIT_OFFSET_TO_IMPORT=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT count(1) as total FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN")
-    LIMIT_OFFSET_TO_IMPORT=$(echo "5.000.000" | tr -d '.' )
-    writeLog "🏁 OFFSET limite de '$TABLE_MAIN': $(format_number $LIMIT_OFFSET_TO_IMPORT)"
+    LIMIT_OFFSET_TO_IMPORT=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT count(1) as total FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN")
+    writeLog "🏁 Limite de linhas de '$TABLE_MAIN': $(format_number $LIMIT_OFFSET_TO_IMPORT)"
     echo ""
 }
 
@@ -89,25 +89,18 @@ copyFromPostgresPasteToMongo() {
     local SQL="$(getSQL)"
     echo "$SQL" > "$DIR_CACHE/${LOG_NAME}_LAST_SQL"
 
-    writeLog "🔄 Exportando e importando lote de '$(format_number $BATCH_SIZE)' linhas a partir do offset $(format_number $LAST_OFFSET)..."
+    writeLog "🔄 "$COUNT_LOOP") Aguarde a recuperação do Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) para exportação e importação..."
 
     # STREAM: psql → mongoimport (sem armazenar em variável)
     "${PSQL_CMD[@]}" -t -A -c "$SQL" | \
-        "${MONGOIMPORT_CMD[@]}" \
-            --collection "$TABLE_MAIN" \
-            --mode upsert \
-            --upsertFields _id \
-            --type json > /dev/null 2>&1
+        "${MONGOIMPORT_CMD[@]}" --collection "$TABLE_MAIN" --mode upsert --upsertFields _id --type json > /dev/null 2>&1
 
     if [ $? -ne 0 ]; then
-        writeLog "🛑 Erro ao importar lote a partir do offset $LAST_OFFSET"
-        return
+        writeLog "🛑 Erro ao importar o Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET)!"
+        exit 1
     fi
-
-    LAST_OFFSET=$(( LAST_OFFSET + BATCH_SIZE ))
     [ $LAST_OFFSET -gt $(cat "$DIR_CACHE/$FILE_OFFSET" 2>/dev/null || echo 0) ] && echo "$(( $LAST_OFFSET + $BATCH_SIZE ))" > "$DIR_CACHE/$FILE_OFFSET"
-
-    writeLog "✅ Lote de $(format_number $BATCH_SIZE) linhas replicado com sucesso em $(calculateExecutionTime $START_TIME)"
+    writeLog "✅ "$COUNT_LOOP") Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) replicado com sucesso em $(calculateExecutionTime $START_TIME)"
 }
 
 # -------------------- MAIN --------------------
@@ -121,7 +114,9 @@ while true; do
             continue_loop=false
             break
         }
-        copyFromPostgresPasteToMongo
+        (( COUNT_LOOP += 1 ))
+        copyFromPostgresPasteToMongo &
+        LAST_OFFSET=$(( LAST_OFFSET + BATCH_SIZE ))
     done
     wait
     [ "$continue_loop" == false ] && {
