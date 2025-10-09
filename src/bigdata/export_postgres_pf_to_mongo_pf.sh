@@ -105,7 +105,8 @@ copyFromPostgresPasteToMongo() {
     fi
 
     LAST_OFFSET=$(( LAST_OFFSET + BATCH_SIZE ))
-    echo "$LAST_OFFSET" > "$DIR_CACHE/$FILE_OFFSET"
+    [ $LAST_OFFSET -gt $(cat "$DIR_CACHE/$FILE_OFFSET" 2>/dev/null || echo 0) ] && echo "$(( $LAST_OFFSET + $BATCH_SIZE ))" > "$DIR_CACHE/$FILE_OFFSET"
+
     writeLog "✅ Lote de $(format_number $BATCH_SIZE) linhas replicado com sucesso em $(calculateExecutionTime $START_TIME)"
 }
 
