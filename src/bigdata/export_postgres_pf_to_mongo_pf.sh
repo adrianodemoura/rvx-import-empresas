@@ -40,7 +40,8 @@ checkStart() {
     fi
 
     writeLog "🏁 OFFSET inicial de '$TABLE_MAIN': $(format_number $LAST_OFFSET)"
-    LIMIT_OFFSET_TO_IMPORT=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT count(1) as total FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN")
+    # LIMIT_OFFSET_TO_IMPORT=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT count(1) as total FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN")
+    LIMIT_OFFSET_TO_IMPORT=$(echo "250.000.000" | tr -d '.' )
     writeLog "🏁 Limite de linhas de '$TABLE_MAIN': $(format_number $LIMIT_OFFSET_TO_IMPORT)"
     echo ""
 }
