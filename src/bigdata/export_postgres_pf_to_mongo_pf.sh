@@ -2,14 +2,16 @@
 #
 source "./config/config.sh"
 
+POSTGRES_DB_SCHEMA_FINAL='bigdata_tmp'
+
+COUNT_LOOP=0
 LAST_OFFSET=0
 LAST_IMPORTED_AT=0
-LIMIT_OFFSET_TO_IMPORT=0
-COUNT_LOOP=0
-readonly DATE_NOW=$(date +'%Y-%m-%d %H:%M:%S.%3N')
+
 readonly LOG_NAME="export_pf_from_postgres_to_mongodb"
-readonly FILE_OFFSET="${LOG_NAME}_LAST_OFFSET"
-readonly FILE_IMPORTED="${LOG_NAME}_LAST_IMPORTED_AT"
+readonly FILE_OFFSET="${DIR_CACHE}/${LOG_NAME}/LAST_OFFSET"
+readonly FILE_IMPORTED="${DIR_CACHE}/${LOG_NAME}/LAST_IMPORTED_AT"
+readonly FILE_HAS_END="${DIR_CACHE}/${LOG_NAME}/HAS_END"
 readonly EXECUTION_MODE="${1:-update}"
 readonly BATCH_SIZE=$(echo "1.000.000" | tr -d '.' )
 readonly NUM_INSTANCES=10
@@ -21,7 +23,8 @@ echo ""
 
 checkStart() {
     writeLog "🚀 Iniciando replicação do PostgreSQL para MongoDB, com lotes de '$(format_number $BATCH_SIZE)' linhas, no modo '$EXECUTION_MODE'..."
-    mkdir -p "$DIR_CACHE"
+    mkdir -p "$DIR_CACHE/${LOG_NAME}"
+    rm -rf "$FILE_HAS_END"
 
     # Checa se existe o índice da tabela TABLE_MAIN
     local exists_index=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT * FROM pg_indexes WHERE schemaname='$POSTGRES_DB_SCHEMA_FINAL' AND tablename='$TABLE_MAIN'")
@@ -30,32 +33,32 @@ checkStart() {
         exit 1
     }
 
+    # Checando o último offset
     if [ "$EXECUTION_MODE" != "update" ]; then 
-        LAST_OFFSET=$(cat "$DIR_CACHE/$FILE_OFFSET" 2>/dev/null || echo 0)
+        LAST_OFFSET=$(cat "$FILE_OFFSET" 2>/dev/null || echo 0)
+        echo $LAST_OFFSET
     else
         LAST_IMPORTED_AT=$("${MONGO_CMD[@]}" --quiet --eval "db.getCollection('$TABLE_MAIN').findOne({}, { imported_at: 1, _id: 0 })?.imported_at" | sed 's/-[0-9]\{2\}:[0-9]\{2\}$//')
         LAST_IMPORTED_AT=${LAST_IMPORTED_AT:-1970-01-01}
-        echo "$DATE_NOW" > "$DIR_CACHE/$FILE_IMPORTED"
+        echo "$LAST_IMPORTED_AT" > "$FILE_IMPORTED"
         writeLog "🏁 Iniciando replicação com dados MAIOR QUE '$LAST_IMPORTED_AT'"
     fi
-
-    writeLog "🏁 OFFSET inicial de '$TABLE_MAIN': $(format_number $LAST_OFFSET)"
-    # LIMIT_OFFSET_TO_IMPORT=$("${PSQL_CMD[@]}" -t -A -F "" -c "SELECT count(1) as total FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN")
-    LIMIT_OFFSET_TO_IMPORT=$(echo "250.000.000" | tr -d '.' )
-    writeLog "🏁 Limite de linhas de '$TABLE_MAIN': $(format_number $LIMIT_OFFSET_TO_IMPORT)"
+    writeLog "🏁 Offset final de '$TABLE_MAIN': $(format_number $LAST_OFFSET)"
     echo ""
 }
 
 checkEnd() {
     writeLog "$(repeat_char '-')"
-    local total_mongo=$("${MONGO_CMD[@]}" --quiet --eval "db.$TABLE_MAIN.countDocuments()")
-    writeLog "✅ $(format_number $total_mongo) documentos no MongoDB no total."
+    writeLog "🔎 Aguarde a contagem de documentos no MongoDB..."
+    local total_mongo=$("${MONGO_CMD[@]}" --quiet --eval "db.$TABLE_MAIN.estimatedDocumentCount()")
+    writeLog "✅ Estimasse $(format_number $total_mongo) documentos no total do MongoDB."
     writeLog "✅ Exportação completa em $(calculateExecutionTime)"
     echo ""
 }
 
 getSQL() {
-    local SQL_SOURCE="" SUBQUERIES="" SQL_WHERE=""
+    local SQL_SOURCE="" SUBQUERIES SQL_WHERE
+    local DATE_NOW=$(date +'%Y-%m-%d %H:%M:%S.%3N')
 
     [ "$EXECUTION_MODE" == "update" ] && {
         SQL_WHERE="WHERE p.updated_at>'$LAST_IMPORTED_AT'"
@@ -74,9 +77,7 @@ getSQL() {
         FROM (
             SELECT p.cpf AS _id, p.*, '$DATE_NOW' AS imported_at
             $SUBQUERIES
-            FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN p
-            $SQL_WHERE
-            ORDER BY p.id
+            FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN p $SQL_WHERE ORDER BY p.id
             OFFSET $LAST_OFFSET
             LIMIT $BATCH_SIZE
         ) row
@@ -88,19 +89,26 @@ getSQL() {
 copyFromPostgresPasteToMongo() {
     local START_TIME=$(date +%s%3N)
     local SQL="$(getSQL)"
-    echo "$SQL" > "$DIR_CACHE/${LOG_NAME}_LAST_SQL"
+    echo "$SQL" > "$DIR_CACHE/${LOG_NAME}/LAST_SQL"
 
     writeLog "🔄 "$COUNT_LOOP") Aguarde a recuperação do Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) para exportação e importação..."
-
     # STREAM: psql → mongoimport (sem armazenar em variável)
     "${PSQL_CMD[@]}" -t -A -c "$SQL" | \
-        "${MONGOIMPORT_CMD[@]}" --collection "$TABLE_MAIN" --mode upsert --upsertFields _id --type json > /dev/null 2>&1
-
+        (read -r line && { echo "$line"; cat; } | \
+        "${MONGOIMPORT_CMD[@]}" --collection "$TABLE_MAIN" --mode upsert --upsertFields _id --type json > /dev/null 2>&1) || {
+            echo "1" > "$FILE_HAS_END";
+            writeLog "📣 "$COUNT_LOOP") O Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) retornou vazio!";
+            return;
+        }
     if [ $? -ne 0 ]; then
         writeLog "🛑 Erro ao importar o Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET)!"
         exit 1
     fi
-    [ $LAST_OFFSET -gt $(cat "$DIR_CACHE/$FILE_OFFSET" 2>/dev/null || echo 0) ] && echo "$(( $LAST_OFFSET + $BATCH_SIZE ))" > "$DIR_CACHE/$FILE_OFFSET"
+
+    [ $LAST_OFFSET -gt $(cat "$FILE_OFFSET" 2>/dev/null || echo 0) ] && {
+        echo "$(( $LAST_OFFSET + $BATCH_SIZE ))" > "$FILE_OFFSET";
+        echo "$SQL" > "${DIR_CACHE}/${LOG_NAME}_LAST_SQL"
+    }
     writeLog "✅ "$COUNT_LOOP") Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) replicado com sucesso em $(calculateExecutionTime $START_TIME)"
 }
 
@@ -111,17 +119,17 @@ checkStart
 while true; do
     continue_loop=true
     for ((current_instance=1; current_instance<=NUM_INSTANCES; current_instance++)); do
-        [ "$LAST_OFFSET" -ge "$LIMIT_OFFSET_TO_IMPORT" ] && {
+        [ -f "$FILE_HAS_END" ] && {
             continue_loop=false
             break
         }
         (( COUNT_LOOP += 1 ))
-        copyFromPostgresPasteToMongo &
+        copyFromPostgresPasteToMongo
         LAST_OFFSET=$(( LAST_OFFSET + BATCH_SIZE ))
     done
     wait
     [ "$continue_loop" == false ] && {
-        writeLog "✅ Loop chegou ao final."
+        writeLog "✅ "$COUNT_LOOP") Loop chegou ao final."
         break
     }
     echo ""
