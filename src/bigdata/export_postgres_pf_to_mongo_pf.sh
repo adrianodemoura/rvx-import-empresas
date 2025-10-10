@@ -5,6 +5,7 @@ source "./config/config.sh"
 COUNT_LOOP=0
 LAST_OFFSET=0
 LAST_IMPORTED_AT=0
+POSTGRES_DB_SCHEMA_FINAL='bigdata_tmp'
 
 readonly LOG_NAME="export_pf_from_postgres_to_mongodb"
 readonly FILE_OFFSET="${DIR_CACHE}/${LOG_NAME}/LAST_OFFSET"
@@ -84,23 +85,23 @@ getSQL() {
 }
 
 copyFromPostgresPasteToMongo() {
+    local OUT
     local START_TIME=$(date +%s%3N)
     local SQL="$(getSQL)"
     echo "$SQL" > "$DIR_CACHE/${LOG_NAME}/LAST_SQL"
 
+    # checa se o próximo lote tem dados
+    OUT=$("${PSQL_CMD[@]}" -t -A -c "SELECT 1 FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN p ORDER BY p.id OFFSET $LAST_OFFSET LIMIT 1")
+    [ "$OUT" != "1" ] && {
+        echo "1" > "$FILE_HAS_END"
+        writeLog "📣 "$COUNT_LOOP") O Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) retornou vazio!"
+        return
+    }
+
     writeLog "🔄 "$COUNT_LOOP") Aguarde a recuperação do Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) para exportação e importação..."
+
     # STREAM: psql → mongoimport (sem armazenar em variável)
-    "${PSQL_CMD[@]}" -t -A -c "$SQL" | \
-        (read -r line && { echo "$line"; cat; } | \
-        "${MONGOIMPORT_CMD[@]}" --collection "$TABLE_MAIN" --mode upsert --upsertFields _id --type json > /dev/null 2>&1) || {
-            echo "1" > "$FILE_HAS_END";
-            writeLog "📣 "$COUNT_LOOP") O Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) retornou vazio!";
-            return;
-        }
-    if [ $? -ne 0 ]; then
-        writeLog "🛑 Erro ao importar o Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET)!"
-        exit 1
-    fi
+    "${PSQL_CMD[@]}" -t -A -c "$SQL" | "${MONGOIMPORT_CMD[@]}" --collection "$TABLE_MAIN" --mode upsert --upsertFields _id --type json > /dev/null 2>&1
 
     [ $LAST_OFFSET -gt $(cat "$FILE_OFFSET" 2>/dev/null || echo 0) ] && {
         echo "$(( $LAST_OFFSET + $BATCH_SIZE ))" > "$FILE_OFFSET";
