@@ -73,6 +73,7 @@ getSQL() {
         SELECT row_to_json(row)
         FROM (
             SELECT p.cpf AS _id, p.*, '$DATE_NOW' AS imported_at
+            $SUBQUERIES
             FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN p $SQL_WHERE ORDER BY p.id
             OFFSET $LAST_OFFSET
             LIMIT $BATCH_SIZE
@@ -89,12 +90,12 @@ copyFromPostgresPasteToMongo() {
     echo "$SQL" > "$DIR_CACHE/${LOG_NAME}/LAST_SQL"
 
     # checa se o próximo lote tem dados
-    OUT=$("${PSQL_CMD[@]}" -t -A -c "SELECT 1 FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN p ORDER BY p.id OFFSET $LAST_OFFSET LIMIT 1")
-    [ "$OUT" != "1" ] && {
-        echo "1" > "$FILE_HAS_END"
-        writeLog "📣 "$COUNT_LOOP") O Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) retornou vazio!"
-        return
-    }
+    # OUT=$("${PSQL_CMD[@]}" -t -A -c "SELECT 1 FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN p ORDER BY p.id OFFSET $LAST_OFFSET LIMIT 1")
+    # [ "$OUT" != "1" ] && {
+    #     echo "1" > "$FILE_HAS_END"
+    #     writeLog "📣 "$COUNT_LOOP") O Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) retornou vazio!"
+    #     return
+    # }
 
     writeLog "🔄 "$COUNT_LOOP") Aguarde a recuperação do Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) para exportação e importação..."
 
