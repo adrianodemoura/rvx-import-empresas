@@ -5,7 +5,6 @@ source "./config/config.sh"
 COUNT_LOOP=0
 LAST_OFFSET=0
 LAST_IMPORTED_AT=0
-POSTGRES_DB_SCHEMA_FINAL='bigdata_tmp'
 
 readonly LOG_NAME="export_pf_from_postgres_to_mongodb"
 readonly FILE_OFFSET="${DIR_CACHE}/${LOG_NAME}/LAST_OFFSET"
@@ -121,7 +120,7 @@ while true; do
             break
         }
         (( COUNT_LOOP += 1 ))
-        copyFromPostgresPasteToMongo
+        copyFromPostgresPasteToMongo &
         LAST_OFFSET=$(( LAST_OFFSET + BATCH_SIZE ))
     done
     wait
