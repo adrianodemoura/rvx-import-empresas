@@ -100,7 +100,12 @@ copyFromPostgresPasteToMongo() {
     writeLog "🔄 "$COUNT_LOOP") Aguarde a recuperação do Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) para exportação e importação..."
 
     # STREAM: psql → mongoimport (sem armazenar em variável)
-    "${PSQL_CMD[@]}" -t -A -c "$SQL" | "${MONGOIMPORT_CMD[@]}" --collection "$TABLE_MAIN" --mode upsert --upsertFields _id --type json > /dev/null 2>&1
+    "${PSQL_CMD[@]}" -t -A -c "$SQL" | \
+        "${MONGOIMPORT_CMD[@]}" \
+        --collection "$TABLE_MAIN" \
+        --mode upsert \
+        --upsertFields _id \
+        --type json > /dev/null 2>&1
 
     [ $LAST_OFFSET -gt $(cat "$FILE_OFFSET" 2>/dev/null || echo 0) ] && {
         echo "$(( $LAST_OFFSET + $BATCH_SIZE ))" > "$FILE_OFFSET";
