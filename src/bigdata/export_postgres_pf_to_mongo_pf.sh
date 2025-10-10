@@ -62,18 +62,17 @@ getSQL() {
     }
 
     # Monta os subselects das tabelas relacionadas
-    for entry in "${TABLES[@]}"; do
-        pg_table="${entry%%.*}"
-        sub_name=$(echo "$entry" | cut -d '.' -f 2 | cut -d ' ' -f 1)
-        [ "$pg_table" = "$TABLE_MAIN" ] && continue
-        SUBQUERIES+=", COALESCE((SELECT json_agg(row_to_json(t)) FROM ${POSTGRES_DB_SCHEMA_FINAL}.${pg_table} t WHERE t.cpf = p.cpf), '[]'::json) AS ${sub_name}"
-    done
+    # for entry in "${TABLES[@]}"; do
+    #     pg_table="${entry%%.*}"
+    #     sub_name=$(echo "$entry" | cut -d '.' -f 2 | cut -d ' ' -f 1)
+    #     [ "$pg_table" = "$TABLE_MAIN" ] && continue
+    #     SUBQUERIES+=", COALESCE((SELECT json_agg(row_to_json(t)) FROM ${POSTGRES_DB_SCHEMA_FINAL}.${pg_table} t WHERE t.cpf = p.cpf), '[]'::json) AS ${sub_name}"
+    # done
 
     SQL_SOURCE="COPY (
         SELECT row_to_json(row)
         FROM (
             SELECT p.cpf AS _id, p.*, '$DATE_NOW' AS imported_at
-            $SUBQUERIES
             FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN p $SQL_WHERE ORDER BY p.id
             OFFSET $LAST_OFFSET
             LIMIT $BATCH_SIZE
