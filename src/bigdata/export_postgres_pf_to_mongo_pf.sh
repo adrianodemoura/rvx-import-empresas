@@ -84,7 +84,6 @@ copyFromPostgresPasteToMongo() {
     local OUT
     local START_TIME=$(date +%s%3N)
     local SQL="$(getSQL)"
-    echo "$SQL" > "$DIR_CACHE/${LOG_NAME}/LAST_SQL"
 
     writeLog "🔄 "$( repeatZeros $COUNT_LOOP)") Aguarde a recuperação do Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) para exportação e importação..."
 
@@ -97,7 +96,8 @@ copyFromPostgresPasteToMongo() {
         --type json > /dev/null 2>&1
 
     [ $LAST_OFFSET -gt $(cat "$FILE_OFFSET" 2>/dev/null || echo 0) ] && {
-        echo "$(( $LAST_OFFSET + $BATCH_SIZE ))" > "$FILE_OFFSET";
+        echo "$(( $LAST_OFFSET + $BATCH_SIZE ))" > "$FILE_OFFSET"
+        echo "$SQL" > "$DIR_CACHE/${LOG_NAME}/LAST_SQL"
     }
     writeLog "✅ "$( repeatZeros $COUNT_LOOP)") Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) executado com sucesso em $(calculateExecutionTime $START_TIME)"
 }
