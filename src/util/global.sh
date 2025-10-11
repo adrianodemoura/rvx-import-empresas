@@ -152,3 +152,9 @@ getTableAttr() {
   echo "❌ Tabela '$table_name' não encontrada" >&2
   return 1
 }
+
+# Função para repetir zeros a esuerda
+repeatZeros() {
+  local largura=${2:-5}  # largura padrão é 4
+  printf "%0${largura}d" "$1"
+}
