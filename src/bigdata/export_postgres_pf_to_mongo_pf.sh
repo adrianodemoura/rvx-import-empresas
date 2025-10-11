@@ -5,11 +5,12 @@ source "./config/config.sh"
 COUNT_LOOP=0
 LAST_OFFSET=0
 LAST_IMPORTED_AT=0
+LAST_IMPORTED_ID=0
 
 readonly LOG_NAME="export_pf_from_postgres_to_mongodb"
 readonly FILE_OFFSET="${DIR_CACHE}/${LOG_NAME}/LAST_OFFSET"
 readonly EXECUTION_MODE="${1:-update}"
-readonly BATCH_SIZE=$(echo "1.000.000" | tr -d '.' )
+readonly BATCH_SIZE=$(echo "2.000.000" | tr -d '.' )
 readonly NUM_INSTANCES=10
 readonly TABLE_MAIN='pf_pessoas'
 
@@ -29,15 +30,21 @@ checkStart() {
     }
 
     # Checando o último offset
-    if [ "$EXECUTION_MODE" != "update" ]; then 
-        LAST_OFFSET=$(cat "$FILE_OFFSET" 2>/dev/null || echo 0)
-    else
+    LAST_OFFSET=$(cat "$FILE_OFFSET" 2>/dev/null || echo 0)
+    writeLog "🏁 Offset final de '$TABLE_MAIN': $(format_number $LAST_OFFSET)"
+
+    # Checando MongoDB
+    LAST_IMPORTED_ID=$("${MONGO_CMD[@]}" --quiet --eval "db.getCollection('$TABLE_MAIN').find({}, { id: 1, _id: 0 }).sort({id:-1}).limit(1)" | sed 's/.*id: \([0-9]*\).*/\1/')
+    writeLog "🏁 Último ID do documento '$TABLE_MAIN': $(format_number $LAST_IMPORTED_ID)"
+
+    # Checando a última importação
+    [ "$EXECUTION_MODE" == "update" ] && {
         LAST_IMPORTED_AT=$("${MONGO_CMD[@]}" --quiet --eval "db.getCollection('$TABLE_MAIN').findOne({}, { imported_at: 1, _id: 0 })?.imported_at" | sed 's/-[0-9]\{2\}:[0-9]\{2\}$//')
         LAST_IMPORTED_AT=${LAST_IMPORTED_AT:-1970-01-01}
         echo "$LAST_IMPORTED_AT" > "${DIR_CACHE}/${LOG_NAME}/LAST_IMPORTED_AT"
         writeLog "🏁 Iniciando replicação com dados MAIOR QUE '$LAST_IMPORTED_AT'"
-    fi
-    writeLog "🏁 Offset final de '$TABLE_MAIN': $(format_number $LAST_OFFSET)"
+    }
+
     echo ""
 }
 
