@@ -2,7 +2,7 @@
 #
 
 # Inicio da contagem do tempo de execução
-START_TIME=$(date +%s%3N)
+readonly START_TIME=$(date +%s%3N)
 
 # Carrega as variáveis de ambiente do arquivo .env e .local
 source "./config/tables.sh"
