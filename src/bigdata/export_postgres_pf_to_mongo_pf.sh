@@ -10,8 +10,8 @@ LAST_IMPORTED_ID=0
 readonly LOG_NAME="export_pf_from_postgres_to_mongodb"
 readonly FILE_OFFSET="${DIR_CACHE}/${LOG_NAME}/LAST_OFFSET"
 readonly EXECUTION_MODE="${1:-update}"
-readonly BATCH_SIZE=$(echo "10.000" | tr -d '.' )
-readonly NUM_INSTANCES=20
+readonly BATCH_SIZE=$(echo "1.000.000" | tr -d '.' )
+readonly NUM_INSTANCES=10
 readonly TABLE_MAIN='pf_pessoas'
 
 writeLog "$(repeat_char '=')"
@@ -57,7 +57,37 @@ checkEnd() {
     echo ""
 }
 
-getSQL() {
+getSQLGrupBy() {
+    local SQL_SOURCE="" SUBQUERIES SQL_WHERE
+    local DATE_NOW=$(date +'%Y-%m-%d %H:%M:%S.%3N')
+
+    [ "$EXECUTION_MODE" == "update" ] && {
+        SQL_WHERE="WHERE p.updated_at>'$LAST_IMPORTED_AT'"
+    }
+
+    # Monta os subselects das tabelas relacionadas
+    for entry in "${TABLES[@]}"; do
+        pg_table="${entry%%.*}"
+        sub_name=$(echo "$entry" | cut -d '.' -f 2 | cut -d ' ' -f 1)
+        [ "$pg_table" = "$TABLE_MAIN" ] && continue
+        SUBQUERIES+=", 
+            ((SELECT json_agg(row_to_json(t)) FROM ${POSTGRES_DB_SCHEMA_FINAL}.${pg_table} t WHERE t.cpf = p.cpf GROUP BY t.cpf), '[]'::json) AS ${sub_name}"
+    done
+
+    SQL_SOURCE="COPY (
+        SELECT row_to_json(row)
+        FROM (
+            SELECT p.cpf AS _id, p.*, '$DATE_NOW' AS imported_at $SUBQUERIES
+            FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN p $SQL_WHERE ORDER BY p.id
+            OFFSET $LAST_OFFSET
+            LIMIT $BATCH_SIZE
+        ) row
+    ) TO STDOUT;"
+
+    echo "$SQL_SOURCE"
+}
+
+getSQLCOALESCE() {
     local SQL_SOURCE="" SUBQUERIES SQL_WHERE
     local DATE_NOW=$(date +'%Y-%m-%d %H:%M:%S.%3N')
 
@@ -87,8 +117,59 @@ getSQL() {
     echo "$SQL_SOURCE"
 }
 
+getSQLLeftJoin() {
+    local SQL_SOURCE="" JOIN_QUERIES="" SELECT_FIELDS="" SQL_WHERE=""
+    local DATE_NOW
+    DATE_NOW=$(date +'%Y-%m-%d %H:%M:%S.%3N')
+
+    if [ "$EXECUTION_MODE" = "update" ]; then
+        SQL_WHERE="WHERE p.updated_at > '$LAST_IMPORTED_AT'"
+    fi
+
+    # Monta os LEFT JOINs e os campos de seleção agregados
+    for entry in "${TABLES[@]}"; do
+        pg_table="${entry%%.*}"
+        sub_name=$(echo "$entry" | cut -d '.' -f 2 | cut -d ' ' -f 1)
+
+        # pula a tabela principal
+        if [ "$pg_table" = "$TABLE_MAIN" ]; then
+            continue
+        fi
+
+        JOIN_QUERIES+="
+            LEFT JOIN (
+                SELECT cpf, json_agg(row_to_json(t)) AS ${sub_name}
+                FROM ${POSTGRES_DB_SCHEMA_FINAL}.${pg_table} t
+                GROUP BY cpf
+            ) ${sub_name} ON ${sub_name}.cpf = p.cpf
+            "
+
+        # cria a coluna agregada com fallback para array vazio
+        SELECT_FIELDS+=", COALESCE(${sub_name}.${sub_name}, '[]'::json) AS ${sub_name}"
+    done
+
+    SQL_SOURCE="COPY (
+        SELECT json_agg(row_to_json(row))
+            FROM (
+                SELECT
+                    p.cpf AS _id,
+                    p.*,
+                    '$DATE_NOW' AS imported_at
+                    $SELECT_FIELDS
+                FROM ${POSTGRES_DB_SCHEMA_FINAL}.${TABLE_MAIN} p
+                $JOIN_QUERIES
+                $SQL_WHERE
+                ORDER BY p.id
+                OFFSET $LAST_OFFSET
+                LIMIT $BATCH_SIZE
+            ) row
+        ) TO STDOUT;"
+
+    echo "$SQL_SOURCE"
+}
+
 copyFromPostgresPasteToMongo() {
-    local START_TIME_COPY=$(date +%s%3N) SQL="$(getSQL)" OUT
+    local START_TIME_COPY=$(date +%s%3N) SQL="$(getSQLCOALESCE)" OUT
 
     writeLog "🔄 "$( repeatZeros $COUNT_LOOP)") Aguarde a recuperação do Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) para exportação e importação..."
 
@@ -99,13 +180,6 @@ copyFromPostgresPasteToMongo() {
         --mode upsert \
         --upsertFields _id \
         --type json > /dev/null 2>&1
-    # OUT=$("${PSQL_CMD[@]}" -t -A -c "$SQL")
-    # echo "$OUT" > "$DIR_CACHE/out"
-    # echo "$OUT" | "${MONGOIMPORT_CMD[@]}" \
-    #     --collection "$TABLE_MAIN" \
-    #     --mode upsert \
-    #     --upsertFields _id \
-    #     --type json > /dev/null 2>&1
 
     [ $LAST_OFFSET -gt $(( $(cat "$FILE_OFFSET" 2>/dev/null || echo 0) + 0 )) ] && {
         echo "$(( $LAST_OFFSET + $BATCH_SIZE ))" > "$FILE_OFFSET"

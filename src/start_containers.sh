@@ -23,8 +23,6 @@ start_container() {
 
 # Postgres
 start_container $POSTGRES_CONTAINER "docker run --restart=always -d --name $POSTGRES_CONTAINER \
-  --cpuset-cpus=0-10 \
-  --memory=10g \
   -e TZ=America/Sao_Paulo \
   -e POSTGRES_PASSWORD=$POSTGRES_DB_PASSWORD \
   -v $(pwd)/storage:/storage \
