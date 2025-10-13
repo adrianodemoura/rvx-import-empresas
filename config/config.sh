@@ -2,7 +2,7 @@
 #
 
 # Configurações para matar processo
-trap 'kill $(jobs -p)' EXIT
+# trap 'kill $(jobs -p)' EXIT
 
 # Inicio da contagem do tempo de execução
 readonly START_TIME=$(date +%s%3N)

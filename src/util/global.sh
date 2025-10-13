@@ -1,6 +1,6 @@
 # Função para repetir caracter
 repeat_char() {
-  printf "%0.s$1" $(seq 1 ${2:-99})
+  printf "%0.s$1" $(seq 1 ${2:-110})
 }
 
 # função para escrever LOGs
