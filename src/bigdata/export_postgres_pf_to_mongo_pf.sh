@@ -127,7 +127,7 @@ while true; do
         copyFromPostgresPasteToMongo &
         LAST_OFFSET=$(( LAST_OFFSET + BATCH_SIZE ))
     done
-    wait -n
+    wait
 
     # checa se o próximo lote tem dados
     writeLog "🔎 $(repeatZeros $(( COUNT_LOOP + 1 )))) Aguarde a verificação se o Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) possui dados..."
