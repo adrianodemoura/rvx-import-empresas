@@ -14,8 +14,8 @@ echo ""
 readonly PG_DUMP=(
     docker exec -i -e PGPASSWORD="$PROD_POSTGRES_DB_PASSWORD" $POSTGRES_CONTAINER 
     pg_dump
-    -h $PROD_POSTGRES_DB_HOST 
-    -p $PROD_POSTGRES_DB_PORT 
+    -h '127.0.0.1'
+    -p '5432'
     -U $PROD_POSTGRES_DB_USER
     -d $PROD_POSTGRES_DB_DATABASE
 )
