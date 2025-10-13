@@ -32,7 +32,6 @@ checkStart() {
     # Checando o último offset
     LAST_OFFSET=$(cat "$FILE_OFFSET" 2>/dev/null || echo 0)
     writeLog "🏁 Offset final de '$TABLE_MAIN': $(format_number $LAST_OFFSET)"
-    echo "$(( $LAST_OFFSET + $BATCH_SIZE ))" > "$FILE_OFFSET"
 
     # Checando MongoDB
     LAST_IMPORTED_ID=$("${MONGO_CMD[@]}" --quiet --eval "db.getCollection('$TABLE_MAIN').find({}, { id: 1, _id: 0 }).sort({id:-1}).limit(1)" | sed 's/.*id: \([0-9]*\).*/\1/')
@@ -59,46 +58,33 @@ checkEnd() {
 }
 
 getSQL() {
-    local SQL_SOURCE="" 
-    JOINS="" 
-    SELECT_FIELDS="" 
-    SQL_WHERE="" 
-    local DATE_NOW=$(date +'%Y-%m-%d %H:%M:%S.%3N') 
+    local SQL_SOURCE="" SUBQUERIES SQL_WHERE
+    local DATE_NOW=$(date +'%Y-%m-%d %H:%M:%S.%3N')
 
-    [ "$EXECUTION_MODE" == "update" ] && { 
-        SQL_WHERE="WHERE p.updated_at>'$LAST_IMPORTED_AT'" 
-    } 
+    [ "$EXECUTION_MODE" == "update" ] && {
+        SQL_WHERE="WHERE p.updated_at>'$LAST_IMPORTED_AT'"
+    }
 
-    # Monta os joins das tabelas relacionadas 
-    for entry in "${TABLES[@]}"; do 
-        pg_table="${entry%%.*}" 
-        sub_name=$(echo "$entry" | cut -d '.' -f 2 | cut -d ' ' -f 1) 
-        [ "$pg_table" = "$TABLE_MAIN" ] && continue 
-        JOINS+="LEFT JOIN LATERAL ( 
-        SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json) AS data 
-        FROM ${POSTGRES_DB_SCHEMA_FINAL}.${pg_table} t 
-        WHERE t.cpf = p.cpf
-        ) ${sub_name} ON TRUE" 
-        JOINS+=" " 
-        SELECT_FIELDS+="${sub_name}.data AS ${sub_name}," 
-    done 
+    # Monta os subselects das tabelas relacionadas
+    for entry in "${TABLES[@]}"; do
+        pg_table="${entry%%.*}"
+        sub_name=$(echo "$entry" | cut -d '.' -f 2 | cut -d ' ' -f 1)
+        [ "$pg_table" = "$TABLE_MAIN" ] && continue
+        SUBQUERIES+=", 
+            COALESCE((SELECT json_agg(row_to_json(t)) FROM ${POSTGRES_DB_SCHEMA_FINAL}.${pg_table} t WHERE t.cpf = p.cpf), '[]'::json) AS ${sub_name}"
+    done
 
-    SQL_SOURCE="COPY ( 
-        SELECT row_to_json(row) 
-        FROM ( 
-        SELECT 
-            p.cpf AS _id, 
-            p.*, 
-            '$DATE_NOW' AS imported_at, 
-            ${SELECT_FIELDS%,} 
-        FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN p 
-        ${JOINS} 
-        $SQL_WHERE 
-        ORDER BY p.id OFFSET $LAST_OFFSET LIMIT $BATCH_SIZE 
-        ) row 
-    ) TO STDOUT;" 
+    SQL_SOURCE="COPY (
+        SELECT row_to_json(row)
+        FROM (
+            SELECT p.cpf AS _id, p.*, '$DATE_NOW' AS imported_at $SUBQUERIES
+            FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN p $SQL_WHERE ORDER BY p.id
+            OFFSET $LAST_OFFSET
+            LIMIT $BATCH_SIZE
+        ) row
+    ) TO STDOUT;"
 
-    echo "$SQL_SOURCE" 
+    echo "$SQL_SOURCE"
 }
 
 copyFromPostgresPasteToMongo() {
@@ -107,20 +93,21 @@ copyFromPostgresPasteToMongo() {
     writeLog "🔄 "$( repeatZeros $COUNT_LOOP)") Aguarde a recuperação do Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) para exportação e importação..."
 
     # STREAM: psql → mongoimport (sem armazenar em variável)
-    # "${PSQL_CMD[@]}" -t -A -c "$SQL" | \
-    #     "${MONGOIMPORT_CMD[@]}" \
-    #     --collection "$TABLE_MAIN" \
-    #     --mode upsert \
-    #     --upsertFields _id \
-    #     --type json > /dev/null 2>&1
-    OUT=$("${PSQL_CMD[@]}" -t -A -c "$SQL")
-    echo "$OUT" | "${MONGOIMPORT_CMD[@]}" \
+    "${PSQL_CMD[@]}" -t -A -c "$SQL" | \
+        "${MONGOIMPORT_CMD[@]}" \
         --collection "$TABLE_MAIN" \
         --mode upsert \
         --upsertFields _id \
         --type json > /dev/null 2>&1
+    # OUT=$("${PSQL_CMD[@]}" -t -A -c "$SQL")
+    # echo "$OUT" > "$DIR_CACHE/out"
+    # echo "$OUT" | "${MONGOIMPORT_CMD[@]}" \
+    #     --collection "$TABLE_MAIN" \
+    #     --mode upsert \
+    #     --upsertFields _id \
+    #     --type json > /dev/null 2>&1
 
-    [ $LAST_OFFSET -gt $(cat "$FILE_OFFSET" 2>/dev/null || echo 0) ] && {
+    [ $LAST_OFFSET -gt $(( $(cat "$FILE_OFFSET" 2>/dev/null || echo 0) + 0 )) ] && {
         echo "$(( $LAST_OFFSET + $BATCH_SIZE ))" > "$FILE_OFFSET"
         echo "$SQL" > "$DIR_CACHE/${LOG_NAME}/LAST_SQL"
     }
@@ -144,7 +131,10 @@ while true; do
 
     # checa se o próximo lote tem dados
     writeLog "🔎 $(repeatZeros $(( COUNT_LOOP + 1 )))) Aguarde a verificação se o Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) possui dados..."
-    OUT=$("${PSQL_CMD[@]}" -t -A -c "SELECT 1 FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN p ORDER BY p.id OFFSET $LAST_OFFSET LIMIT 1")
+    OUT=$("${PSQL_CMD[@]}" -t -A -c "SELECT 1 FROM $POSTGRES_DB_SCHEMA_FINAL.$TABLE_MAIN p ORDER BY p.id OFFSET $LAST_OFFSET LIMIT 1" 2<&1)
+    [ $? -ne 0 ] && {
+        writeLog "❌ Erro ao tentar recuperar o próximo lote '$OUT'"
+    }
     [ "$OUT" != "1" ] && {
         writeLog "📣 $(repeatZeros $(( COUNT_LOOP + 1 )))) O Lote $(format_number $BATCH_SIZE)/$(format_number $LAST_OFFSET) retornou vazio!"
         continue_loop=false

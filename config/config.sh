@@ -1,6 +1,9 @@
 #!/bin/bash
 #
 
+# Configurações para matar processo
+trap 'kill $(jobs -p)' EXIT
+
 # Inicio da contagem do tempo de execução
 readonly START_TIME=$(date +%s%3N)
 
@@ -16,58 +19,31 @@ if [[ ${#DATA_ORIGEM} -eq 0 ]]; then
   getLatestDir
   DATA_ORIGEM=$(cat .data_origem 2>/dev/null)
 fi
- 
-# Atalho para conexão com o banco de dados local
-readonly PSQL_CMD=(
-  docker exec -i $POSTGRES_CONTAINER 
-  psql
-  -U "$POSTGRES_DB_USER"
-  -d "$POSTGRES_DB_DATABASE"
-  -v PGPASSWORD="$POSTGRES_DB_PASSWORD"
-)
 
-# Atalho para conexão com o banco de dados REMOTO
-readonly PROD_PSQL_CMD=(
-  docker exec -i -e PGPASSWORD="$PROD_POSTGRES_DB_PASSWORD" $POSTGRES_CONTAINER 
+# Atalho para conexão com o banco de dados local
+readonly PSQL_CMD=( docker exec -i -e PGPASSWORD="$POSTGRES_DB_PASSWORD" $POSTGRES_CONTAINER 
   psql 
-  -p "$PROD_POSTGRES_DB_PORT"
-  -h "$PROD_POSTGRES_DB_HOST" 
-  -U "$PROD_POSTGRES_DB_USER" 
-  -d "$PROD_POSTGRES_DB_DATABASE"
-)
-# Atalho para conexão com o banco de dados REMOTO PG_DUMP
-readonly PROD_PG_DUMP=(
-  docker exec -i -e PGPASSWORD="$PROD_POSTGRES_DB_PASSWORD" $POSTGRES_CONTAINER 
-  pg_dump 
-  -p "$PROD_POSTGRES_DB_PORT"
-  -h "$PROD_POSTGRES_DB_HOST" 
-  -U "$PROD_POSTGRES_DB_USER" 
-  -d "$PROD_POSTGRES_DB_DATABASE"
+  -h "127.0.0.1" 
+  -p "5432" 
+  -U "$POSTGRES_DB_USER" 
+  -d "$POSTGRES_DB_DATABASE"
 )
 
 # Atalho para conexão com o MongoDB (dentro do container)
-readonly MONGO_CMD=(
-  docker exec -i $MONGO_CONTAINER mongosh --quiet
-  -u "$MONGODB_USER"
-  -p "$MONGODB_PASSWORD"
+readonly MONGO_CMD=( 
+  docker exec -i $MONGO_CONTAINER mongosh --quiet 
+  --port "27017" 
+  --host "127.0.0.1" 
+  -u "$MONGODB_USER" 
+  -p "$MONGODB_PASSWORD" 
   "$MONGODB_DATABASE"
 )
-
-# Atalho para conexão com o MongoDB Remoto
-readonly PROD_MONGO_CMD=(
-  docker exec -i $MONGO_CONTAINER mongosh --quiet
-  --host "$PROD_MONGODB_HOST"
-  --port "$PROD_MONGODB_PORT"
-  -u "$PROD_MONGODB_USER"
-  -p "$PROD_MONGODB_PASSWORD"
-  "$PROD_MONGODB_DATABASE"
-)
-
-# Atalho para conexão com o MongoDB Import (dentro do container)
-readonly MONGOIMPORT_CMD=(
-  docker exec -i $MONGO_CONTAINER mongoimport
-  --quiet
-  -u "$MONGODB_USER"
-  -p "$MONGODB_PASSWORD"
+# Atalho para conexão com o MongoImport (dentro do container)
+readonly MONGOIMPORT_CMD=( 
+  docker exec -i $MONGO_CONTAINER mongoimport --quiet 
+  --port "27017" 
+  --host "127.0.0.1" 
+  -u "$MONGODB_USER" 
+  -p "$MONGODB_PASSWORD" 
   --db "$MONGODB_DATABASE"
 )
