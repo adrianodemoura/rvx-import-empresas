@@ -28,6 +28,7 @@ start_container $POSTGRES_CONTAINER "docker run --restart=always -d --name $POST
   -v $(pwd)/storage:/storage \
   -v $POSTGRES_DIR_DATA:/var/lib/postgresql/data \
   -p $POSTGRES_DB_PORT:5432 \
+  --cpus=10 \
   postgres:14.2-alpine \
   -c max_wal_size=3GB"
 
