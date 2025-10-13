@@ -10,8 +10,8 @@ LAST_IMPORTED_ID=0
 readonly LOG_NAME="export_pf_from_postgres_to_mongodb"
 readonly FILE_OFFSET="${DIR_CACHE}/${LOG_NAME}/LAST_OFFSET"
 readonly EXECUTION_MODE="${1:-update}"
-readonly BATCH_SIZE=$(echo "1.000.000" | tr -d '.' )
-readonly NUM_INSTANCES=10
+readonly BATCH_SIZE=$(echo "10.000" | tr -d '.' )
+readonly NUM_INSTANCES=20
 readonly TABLE_MAIN='pf_pessoas'
 
 writeLog "$(repeat_char '=')"
