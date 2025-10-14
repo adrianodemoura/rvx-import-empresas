@@ -1,26 +1,33 @@
 -- cria a função set_updated_at se não existir (usa {schema})
-DO $do$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_proc p
-        JOIN pg_namespace n ON n.oid = p.pronamespace
-        WHERE p.proname = 'set_updated_at' AND n.nspname = '{schema}'
-    ) THEN
-        EXECUTE $fn$
-            CREATE FUNCTION {schema}.set_updated_at() RETURNS TRIGGER AS $body$
-            DECLARE
-                dados text;
-            BEGIN
-                NEW.updated_at = now();
-                RAISE NOTICE 'Notificando atualiza_mongo';
-                dados = row_to_json(NEW)::text;
-                PERFORM pg_notify('atualiza_mongo', dados);
-                RETURN NEW;
-            END;
-            $body$ LANGUAGE plpgsql;
-        $fn$;
-    END IF;
+DO $do$ 
+BEGIN 
+    IF NOT EXISTS ( 
+        SELECT 1 
+        FROM pg_proc p 
+        JOIN pg_namespace n ON n.oid = p.pronamespace 
+        WHERE p.proname = 'set_updated_at' 
+        AND n.nspname = '{schema}' 
+    ) THEN 
+        EXECUTE '
+            CREATE FUNCTION {schema}.set_updated_at() 
+            RETURNS TRIGGER AS $body$ 
+            DECLARE 
+                arquivo text; 
+                json_data json; 
+            BEGIN 
+                NEW.updated_at = now(); 
+                arquivo := ''/var/lib/postgresql/data/export/'' || TG_TABLE_NAME || ''.'' || NEW.id || ''.json''; 
+                json_data = row_to_json(NEW); 
+                BEGIN 
+                    EXECUTE format(''COPY (SELECT %L::json) TO %L'', json_data, arquivo); 
+                EXCEPTION 
+                    WHEN OTHERS THEN 
+                        RAISE WARNING ''Erro ao criar arquivo JSON: %'', SQLERRM; 
+                END; 
+                RETURN NEW; 
+            END; 
+            $body$ LANGUAGE plpgsql;';
+    END IF; 
 END;
 $do$;
 
@@ -88,7 +95,7 @@ $do$;
 DO $do$
 DECLARE
     tbls text[] := ARRAY[
-        'pf_pessoas ', 'pf_telefones ', 'pf_emails ', 'pf_enderecos', 'pf_banco_gov', 'pf_bolsa_familia', 
+        'pf_pessoas', 'pf_telefones', 'pf_emails', 'pf_enderecos', 'pf_banco_gov', 'pf_bolsa_familia', 
         'pf_capacidade_pagamento', 'pf_carteira_trabalho', 'pf_cbo', 'pf_classe_social', 'pf_escolaridade', 
         'pf_fgts', 'pf_governos', 'pf_imoveis_ibge', 'pf_modelo_analitico_credito', 'pf_nacionalidade', 
         'pf_obitos', 'pf_persona_demografica', 'pf_pis', 'pf_poder_aquisitivo', 'pf_politicamente_exposta', 
