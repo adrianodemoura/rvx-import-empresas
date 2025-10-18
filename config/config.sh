@@ -47,3 +47,14 @@ readonly MONGOIMPORT_CMD=(
   -p "$MONGODB_PASSWORD" 
   --db "$MONGODB_DATABASE"
 )
+
+
+
+# Atalho para conexão com o banco remoto
+readonly PROD_PSQL_CMD=( docker exec -i -e PGPASSWORD="$PROD_POSTGRES_DB_PASSWORD" $POSTGRES_CONTAINER 
+  psql 
+  -h "$PROD_POSTGRES_DB_HOST" 
+  -p "5454" 
+  -U "$PROD_POSTGRES_DB_USER" 
+  -d "$PROD_POSTGRES_DB_DATABASE"
+)
