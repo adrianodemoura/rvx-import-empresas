@@ -17,11 +17,12 @@ declare -i TOTAL_UPDATES=0
 readonly LIMIT_LINES=${1:-100}
 readonly LOG_NAME="import_inss_hugo"
 readonly DIR_CSV_SIAPE="$DIR_CACHE/inss_hugo"
-readonly ORIGEM="INSS_HUGO"
+readonly ORIGEM="LEMIT"
+readonly DATA_ORIGEM="$(date +%Y-%m-01)"
 
 checkStart() {
     writeLog "$(repeat_char '=')"
-    writeLog "🚀 Iniciando a importação INSS HUGO de $(format_number $LIMIT_LINES) linhas para o Banco de Dados '$POSTGRES_DB_DATABASE' e o Schema '$POSTGRES_DB_SCHEMA'"
+    writeLog "🚀 Iniciando a importação '$ORIGEM' de $(format_number $LIMIT_LINES) linhas para o Banco '$POSTGRES_DB_DATABASE' e o Schema '$POSTGRES_DB_SCHEMA_FINAL'"
     echo ""
 }
 
@@ -37,58 +38,99 @@ checkEnd() {
 # Atualiza pf_telefones
 update_pf_telefones() {
     IFS=';' read -ra LINE_VALUES <<< "$1"
-    local START_TIME_UPDATE=$(date +%s%3N)
-    local cpf="${LINE_VALUES[0]}"
-    local nome="${LINE_VALUES[7]}"
-    local inserts=0
-    local updates=0
+    local START_TIME_UPDATE=$(date +%s%3N) cpf="${LINE_VALUES[0]}" nome="${LINE_VALUES[7]}" all_phones
+    local fields="id, telefone, ranking, origem, data_origem, temp_min, temp_max, ok_calls_total, last_ok_date, whatsapp_checked_at, err_404_notfound, err_503_blacklist_stage, penal_487_cancel, penal_480_noanswer, last_error_date"
+    local -i inserts=0 updates=0 data_total=0
 
+    [[ -z "$cpf" ]] && continue
+    COUNT_LINES+=1
+
+    # Criando o novo registro do telefone
+    local -i last_ranking=1 data_new_total=0
+    declare -A data_new
     for i in {1..5}; do
         local numero_telefone="${LINE_VALUES[$i]}"
         [[ -z "$numero_telefone" ]] && continue
 
-        local query_check="SELECT COUNT(*) FROM $POSTGRES_DB_SCHEMA_FINAL.pf_telefones WHERE cpf = '$cpf' AND telefone = '$numero_telefone'"
-        local count=$("${PROD_PSQL_CMD[@]}" -t -c "$query_check" < /dev/null | tr -d '[:space:]')
+        all_phones+=";$numero_telefone"
 
-        if [ "$count" = "0" ]; then
-            local query_insert="INSERT INTO $POSTGRES_DB_SCHEMA_FINAL.pf_telefones (cpf, telefone, tipo, origem) VALUES ('$cpf', '$numero_telefone', '$telefone', '$ORIGEM')"
-            # "${PSQL_CMD[@]}" -q -t -c "$query_insert" < /dev/null
+        IFS=',' read -ra arr_fields <<< "${fields// /}"
+        for o in "${!arr_fields[@]}"; do
+            declare "data_new[$numero_telefone,${arr_fields[$o]}]=0"
+        done
+        declare "data_new[$numero_telefone,id]=0"
+        declare "data_new[$numero_telefone,telefone]=$numero_telefone"
+        declare "data_new[$numero_telefone,cpf]=$cpf"
+        declare "data_new[$numero_telefone,origem]=$ORIGEM"
+        declare "data_new[$numero_telefone,data_origem]=$DATA_ORIGEM"
+
+        ((data_new_total++))
+        ((last_ranking++))
+    done
+
+    # Recupeando telefones do CPF no banco de dados 
+    local query="SELECT $fields FROM $POSTGRES_DB_SCHEMA_FINAL.pf_telefones WHERE cpf = '$cpf' ORDER BY ranking"
+    local out=$("${PROD_PSQL_CMD[@]}" -t -c "$query" < /dev/null )
+    eval "$(outToArray "$out" "$fields")"
+    data_total=$(( data_index + data_new_total ))
+
+    # Loop no data, resultado da query
+    for ((i=0; i<$data_index; i++)); do
+        local idBanco="${data[$i,id]}"
+        local telefoneBanco="${data[$i,telefone]}"
+        local telefoneCsv="${data_new[$telefoneBanco,telefone]}"
+
+        declare "data_new[$telefoneBanco,id]=$idBanco"
+        declare "data_new[$telefoneBanco,telefone]=$telefoneBanco"
+        declare "data_new[$telefoneBanco,cpf]=$cpf"
+        declare "data_new[$telefoneBanco,origem]=$ORIGEM"
+        declare "data_new[$telefoneBanco,data_origem]=$DATA_ORIGEM"
+
+        [[ $telefoneBanco != $telefoneCsv ]] && {
+            all_phones+=";$telefoneBanco"
+            ((data_new_total++))
+            ((last_ranking++))
+        }
+    done
+
+    local -i index=1
+    IFS=';' read -ra array_phones <<< "${all_phones#;}"
+    for telefone in "${array_phones[@]}"; do
+        local id="${data_new[$telefone,id]}"
+        declare "data_new[$telefone,ranking]=$index"
+
+        if [[ -v $id ]]; then
             ((inserts++))
         else
-            local query_update="UPDATE $POSTGRES_DB_SCHEMA_FINAL.pf_telefones SET tipo = '$telefone' WHERE cpf = '$cpf' AND telefone = '$numero_telefone'"
-            # "${PSQL_CMD[@]}" -q -t -c "$query_update" < /dev/null
             ((updates++))
         fi
+
+        echo "Cpf: $cpf Telefone: ${data_new[$telefone,telefone]} | Ranking: ${data_new[$telefone,ranking]} | Id: $id"
+        ((index++))
     done
-    writeLog "📥 CPF '$cpf' atualizado com sucesso. INSERTs: $inserts, UPDATEs: $updates"
+
+    writeLog "📥 $(format_number $COUNT_LINES)) CPF '$cpf' com '$data_new_total' telefones atualizado com sucesso. INSERTs: $inserts, UPDATEs: $updates"
+    echo ""
 
     TOTAL_INSERTS+=$inserts
     TOTAL_UPDATES+=$updates
 }
 
-process_csv() {
-    local csv_file="$1"
-    local header_line
-    header_line=$(head -n1 "$csv_file")
-    COUNT_LINES+=1
-
-    writeLog "📂 $(format_number $COUNT_LINES)) Lendo arquivo: '$csv_file'..."
-
-    # Usa process substitution em vez de pipe
-    while IFS= read -r line || [ -n "$line" ]; do
-        update_pf_telefones "$line"
-    done < <(tail -n +2 "$csv_file" | head -n $LIMIT_LINES)
-
-    echo ""
-}
-
 main() {
+    checkStart
+
     for CSV_FILE in "$DIR_CSV_SIAPE/"*.csv; do
         [ -f "$CSV_FILE" ] || continue
-        process_csv "$CSV_FILE"
+
+        writeLog "📂 Lendo arquivo: '$(echo $CSV_FILE | cut -d'/' -f 5)'..."
+        echo ""
+
+        while IFS= read -r line || [ -n "$line" ]; do
+            update_pf_telefones "$line"
+        done < <(tail -n +2 "$CSV_FILE" | head -n $LIMIT_LINES)
     done
+
+    checkEnd
 }
 
-checkStart
 main
-checkEnd
