@@ -14,7 +14,7 @@ source "./src/import_siape/fields.sh"
 declare -i COUNT_LINES=0
 declare -i TOTAL_INSERTS=0
 declare -i TOTAL_UPDATES=0
-readonly LIMIT_LINES=${1:-100}
+declare -i LIMIT_LINES=${1:-0}
 readonly LOG_NAME="import_inss_hugo"
 readonly DIR_CSV_SIAPE="$DIR_CACHE/inss_hugo"
 readonly ORIGEM="LEMIT"
@@ -122,7 +122,7 @@ update_pf_telefones() {
                     penal_480_noanswer = null, 
                     last_error_date = null
                     WHERE id=$id"
-            "${PSQL_CMD[@]}" -q -t -c "$query_update" < /dev/null
+            # "${PSQL_CMD[@]}" -q -t -c "$query_update" < /dev/null
             ((updates++))
         fi
 
@@ -131,7 +131,6 @@ update_pf_telefones() {
     done
 
     writeLog "📥 $(format_number $COUNT_LINES)) CPF '$cpf' com '$data_new_total' telefones atualizado com sucesso. INSERTs: $inserts, UPDATEs: $updates"
-    echo ""
 
     TOTAL_INSERTS+=$inserts
     TOTAL_UPDATES+=$updates
@@ -145,6 +144,10 @@ main() {
 
         writeLog "📂 Lendo arquivo: '$(echo $CSV_FILE | cut -d'/' -f 5)'..."
         echo ""
+
+        if [[ $LIMIT_LINES == 0 ]]; then
+            local LIMIT_LINES=$(wc -l "$CSV_FILE" | cut -d' ' -f1)
+        fi
 
         while IFS= read -r line || [ -n "$line" ]; do
             update_pf_telefones "$line"
