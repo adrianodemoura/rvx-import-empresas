@@ -158,3 +158,22 @@ repeatZeros() {
   local largura=${2:-5}  # largura padrão é 4
   printf "%0${largura}d" "$1"
 }
+
+# Retorna o array associativo 'data' e o seu total 'index_data'
+outToArray() {
+  local out="$1"
+  local fields=(${2//,/ })
+  declare -A data
+  local data_index=0
+
+  while IFS='|' read -ra valores; do
+      for ((i=0; i<${#fields[@]}; i++)); do
+          data[$data_index,${fields[$i]// /}]="${valores[$i]// /}"
+          echo "data[$data_index,${fields[$i]// /}]=\"${valores[$i]// /}\""
+      done
+      ((data_index++))
+  done <<< "$out"
+
+  echo "data_index=$data_index"
+  declare -p data
+}
