@@ -69,12 +69,10 @@ update_pf_telefones() {
     done
 
     # Recupeando telefones do CPF no banco de dados 
-    local query="SELECT $fields FROM $POSTGRES_DB_SCHEMA_FINAL.pf_telefones WHERE cpf = '$cpf' ORDER BY ranking"
-    local out=$("${PROD_PSQL_CMD[@]}" -t -c "$query" < /dev/null )
+    local query="SELECT $fields FROM $POSTGRES_DB_SCHEMA_FINAL.pf_telefones WHERE cpf = '$cpf' ORDER BY ranking, id"
+    local out=$("${PSQL_CMD[@]}" -t -c "$query" < /dev/null )
     eval "$(outToArray "$out" "$fields")"
     data_total=$(( data_index + data_new_total ))
-
-    # Loop no data, resultado da query
     for ((i=0; i<$data_index; i++)); do
         local idBanco="${data[$i,id]}"
         local telefoneBanco="${data[$i,telefone]}"
@@ -93,20 +91,43 @@ update_pf_telefones() {
         }
     done
 
-    local -i index=1
+    # Atualizando e/ou inserindo no banco
+    local -i ranking=1
     IFS=';' read -ra array_phones <<< "${all_phones#;}"
     for telefone in "${array_phones[@]}"; do
+        declare "data_new[$telefone,ranking]=$ranking"
         local id="${data_new[$telefone,id]}"
-        declare "data_new[$telefone,ranking]=$index"
 
         if [[ -v $id ]]; then
+            local query_insert="INSERT INTO 
+                $POSTGRES_DB_SCHEMA_FINAL.pf_telefones 
+                (cpf, telefone, ranking, origem, data_origem) VALUES 
+                ('$cpf', '$telefone', $ranking, '$ORIGEM', '$DATA_ORIGEM')"
+            "${PSQL_CMD[@]}" -q -t -c "$query_insert" < /dev/null
             ((inserts++))
         else
+            local query_update="UPDATE 
+                $POSTGRES_DB_SCHEMA_FINAL.pf_telefones SET 
+                    ranking = $ranking, 
+                    origem = '$ORIGEM', 
+                    data_origem = '$DATA_ORIGEM', 
+                    temp_min = null, 
+                    temp_max = null, 
+                    ok_calls_total = null, 
+                    last_ok_date = null, 
+                    whatsapp_checked_at = null, 
+                    err_404_notfound = null, 
+                    err_503_blacklist_stage = null, 
+                    penal_487_cancel = null, 
+                    penal_480_noanswer = null, 
+                    last_error_date = null
+                    WHERE id=$id"
+            "${PSQL_CMD[@]}" -q -t -c "$query_update" < /dev/null
             ((updates++))
         fi
 
-        echo "Cpf: $cpf Telefone: ${data_new[$telefone,telefone]} | Ranking: ${data_new[$telefone,ranking]} | Id: $id"
-        ((index++))
+        # echo "Cpf: $cpf Telefone: ${data_new[$telefone,telefone]} | Ranking: ${data_new[$telefone,ranking]} | Id: $id"
+        ((ranking++))
     done
 
     writeLog "📥 $(format_number $COUNT_LINES)) CPF '$cpf' com '$data_new_total' telefones atualizado com sucesso. INSERTs: $inserts, UPDATEs: $updates"
