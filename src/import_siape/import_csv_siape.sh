@@ -58,35 +58,13 @@ build_headers_map() {
     done
 }
 
-#
-# get_fields_values() {
-#     local table_name=$1
-#     [[ -z "$table_name" ]] && return
-
-#     # cria um array associativo local
-#     declare -A result=()
-
-#     for field in "${FIELDS[@]}"; do
-#         local field_name=${field%%:*}
-#         local field_table=${field#*:}
-#         field_table=${field_table%%.*}
-
-#         if [[ "$field_table" == "$table_name" ]]; then
-#             local field_value
-#             field_value=$(get_csv_value "$field_name")
-#             result["$field_name"]="$field_value"
-#         fi
-#     done
-
-#     # “retorna” o array — na prática, faz um declare -p para capturar fora
-#     declare -p result
-# }
-get_field_value() {
+# Retorna o valor do campo
+get_fields_values() {
     local table_name=$1
-    local field_name=$2
     [[ -z "$table_name" ]] && return
 
-    declare -A fields_values=()
+    # cria um array associativo local
+    declare -A result=()
 
     for field in "${FIELDS[@]}"; do
         local field_name=${field%%:*}
@@ -96,12 +74,34 @@ get_field_value() {
         if [[ "$field_table" == "$table_name" ]]; then
             local field_value
             field_value=$(get_csv_value "$field_name")
-            fields_values["$field_name"]="$field_value"
+            result["$field_name"]="$field_value"
         fi
     done
 
-    echo "$fields_values"
+    # “retorna” o array — na prática, faz um declare -p para capturar fora
+    declare -p result
 }
+# get_field_value() {
+#     local table_name=$1
+#     local field_name=$2
+#     [[ -z "$table_name" ]] && return
+
+#     declare -A fields_values=()
+
+#     for field in "${FIELDS[@]}"; do
+#         local field_name=${field%%:*}
+#         local field_table=${field#*:}
+#         field_table=${field_table%%.*}
+
+#         if [[ "$field_table" == "$table_name" ]]; then
+#             local field_value
+#             field_value=$(get_csv_value "$field_name")
+#             fields_values["$field_name"]="$field_value"
+#         fi
+#     done
+
+#     echo "$fields_values"
+# }
 
 # Atualiza pf_pessoas
 update_pf_pessoas() {
@@ -176,31 +176,28 @@ update_pf_emails() {
     writeLog "✅ 'pf_emails' atualizado com sucesso em $(calculateExecutionTime $START_TIME_UPDATE)"
 }
 
-process_csv() {
-    local csv_file="$1"
-    local header_line
-    header_line=$(head -n1 "$csv_file")
-    build_headers_map "$header_line"
-
-    COUNT_LINES+=1
-    writeLog "📂 $(format_number $COUNT_LINES)) Lendo arquivo: '$csv_file'..."
-    tail -n +2 "$csv_file" | \
-        head -n $LIMIT_LINES | \
-            while IFS=';' read -r -a LINE_VALUES; do
-                update_pf_pessoas
-                # update_pf_siape_bancos
-                # update_pf_enderecos
-                # update_pf_telefones
-                # update_pf_emails
-                echo ""
-            done
-    echo ""
-}
-
 main() {
     for CSV_FILE in "$DIR_CSV_SIAPE/"*.csv; do
         [ -f "$CSV_FILE" ] || continue
-        process_csv "$CSV_FILE"
+
+        local header_line
+        header_line=$(head -n1 "$CSV_FILE")
+        build_headers_map "$header_line"
+
+        COUNT_LINES+=1
+        writeLog "📂 $(format_number $COUNT_LINES)) Lendo arquivo: '$( echo $CSV_FILE | cut -d'/' -f 5)'..."
+        echo ""
+        tail -n +2 "$CSV_FILE" | \
+            head -n $LIMIT_LINES | \
+                while IFS=';' read -r -a LINE_VALUES; do
+                    update_pf_pessoas
+                    # update_pf_siape_bancos
+                    # update_pf_enderecos
+                    # update_pf_telefones
+                    # update_pf_emails
+                    echo ""
+                done
+        echo ""
     done
 }
 

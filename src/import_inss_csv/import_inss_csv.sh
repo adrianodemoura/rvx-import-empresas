@@ -16,13 +16,13 @@ declare -i TOTAL_INSERTS=0
 declare -i TOTAL_UPDATES=0
 declare -i LIMIT_LINES=${1:-0}
 readonly LOG_NAME="import_inss_hugo"
-readonly DIR_CSV_SIAPE="$DIR_CACHE/inss_hugo"
+readonly DIR_CSV_SIAPE="$DIR_CACHE/inss_csv"
 readonly ORIGEM="LEMIT"
 readonly DATA_ORIGEM="$(date +%Y-%m-01)"
 
 checkStart() {
     writeLog "$(repeat_char '=')"
-    writeLog "🚀 Iniciando a importação '$ORIGEM' de $(format_number $LIMIT_LINES) linhas para o Banco '$POSTGRES_DB_DATABASE' e o Schema '$POSTGRES_DB_SCHEMA_FINAL'"
+    writeLog "🚀 Iniciando a importação '$ORIGEM' de $(format_number $LIMIT_LINES) linhas para o Banco '$PROD_POSTGRES_DB_HOST/$PROD_POSTGRES_DB_DATABASE/$PROD_POSTGRES_DB_SCHEMA'"
     echo ""
 }
 
@@ -69,8 +69,8 @@ update_pf_telefones() {
     done
 
     # Recupeando telefones do CPF no banco de dados 
-    local query="SELECT $fields FROM $POSTGRES_DB_SCHEMA_FINAL.pf_telefones WHERE cpf = '$cpf' ORDER BY ranking, id"
-    local out=$("${PSQL_CMD[@]}" -t -c "$query" < /dev/null )
+    local query="SELECT $fields FROM $PROD_POSTGRES_DB_SCHEMA.pf_telefones WHERE cpf = '$cpf' ORDER BY ranking, id"
+    local out=$("${PROD_PSQL_CMD[@]}" -t -c "$query" < /dev/null )
     eval "$(outToArray "$out" "$fields")"
     data_total=$(( data_index + data_new_total ))
     for ((i=0; i<$data_index; i++)); do
@@ -100,14 +100,15 @@ update_pf_telefones() {
 
         if [[ -v $id ]]; then
             local query_insert="INSERT INTO 
-                $POSTGRES_DB_SCHEMA_FINAL.pf_telefones 
+                $PROD_POSTGRES_DB_SCHEMA.pf_telefones 
                 (cpf, telefone, ranking, origem, data_origem) VALUES 
                 ('$cpf', '$telefone', $ranking, '$ORIGEM', '$DATA_ORIGEM')"
-            "${PSQL_CMD[@]}" -q -t -c "$query_insert" < /dev/null
+
+            "${PROD_PSQL_CMD[@]}" -q -t -c "$query_insert" < /dev/null
             ((inserts++))
         else
             local query_update="UPDATE 
-                $POSTGRES_DB_SCHEMA_FINAL.pf_telefones SET 
+                $PROD_POSTGRES_DB_SCHEMA.pf_telefones SET 
                     ranking = $ranking, 
                     origem = '$ORIGEM', 
                     data_origem = '$DATA_ORIGEM', 
@@ -122,7 +123,8 @@ update_pf_telefones() {
                     penal_480_noanswer = null, 
                     last_error_date = null
                     WHERE id=$id"
-            # "${PSQL_CMD[@]}" -q -t -c "$query_update" < /dev/null
+
+            "${PROD_PSQL_CMD[@]}" -q -t -c "$query_update" < /dev/null
             ((updates++))
         fi
 
