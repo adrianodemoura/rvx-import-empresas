@@ -5,7 +5,7 @@
 # CPF;TELEFONE1;TELEFONE2;TELEFONE3;TELEFONE4;TELEFONE5;CODIGO;NOME
 # criar campo: "ranking", ordem pelo CSV, depois o que já tem no banco
 # limpar campos: temp_min até o campo last_error_date
-# origem = LEMIT, data_origem='01/mes/ano'
+# origem = LEMIT, data_origem='01/mes/ano', somente para novos importados, já do banco manter.
 #
 
 source "./config/config.sh"
@@ -15,7 +15,7 @@ declare -i COUNT_LINES=0
 declare -i TOTAL_INSERTS=0
 declare -i TOTAL_UPDATES=0
 declare -i LIMIT_LINES=${1:-0}
-readonly LOG_NAME="import_inss_hugo"
+readonly LOG_NAME="import_inss"
 readonly DIR_CSV_SIAPE="$DIR_CACHE/inss_csv"
 readonly ORIGEM="LEMIT"
 readonly DATA_ORIGEM="$(date +%Y-%m-01)"
@@ -110,8 +110,6 @@ update_pf_telefones() {
             local query_update="UPDATE 
                 $PROD_POSTGRES_DB_SCHEMA.pf_telefones SET 
                     ranking = $ranking, 
-                    origem = '$ORIGEM', 
-                    data_origem = '$DATA_ORIGEM', 
                     temp_min = null, 
                     temp_max = null, 
                     ok_calls_total = null, 

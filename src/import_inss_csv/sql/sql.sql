@@ -1,6 +1,12 @@
 SELECT * 
 	FROM bigdata_final.pf_telefones 
-	WHERE cpf='23992921549'
+	WHERE updated_at>'2025-10-20'
+	ORDER BY id DESC 
+	LIMIT 100;
+	
+SELECT * 
+	FROM bigdata_final.pf_telefones 
+	WHERE cpf='49092910244'
 	ORDER BY id DESC 
 	LIMIT 100;
 
@@ -10,6 +16,7 @@ SELECT id
 	LIMIT 3;
 
 SELECT COUNT(1) FROM bigdata_final.pf_telefones;
+SELECT COUNT(1) FROM bigdata_final.pf_telefones WHERE updated_at>'2025-10-20';
 
 SELECT * FROM bigdata_final.pf_telefones WHERE id>276260285;
 
