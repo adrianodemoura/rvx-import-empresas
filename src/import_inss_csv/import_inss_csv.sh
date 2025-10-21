@@ -9,7 +9,6 @@
 #
 
 source "./config/config.sh"
-source "./src/import_siape/fields.sh"
 
 declare -i COUNT_LINES=0
 declare -i TOTAL_INSERTS=0
@@ -31,22 +30,27 @@ checkEnd() {
     writeLog "📈 Totais gerais:"
     writeLog "📣 INSERTs: $TOTAL_INSERTS"
     writeLog "📣 UPDATEs: $TOTAL_UPDATES"
-    writeLog "✅ Importação INSS HUGO completa em $(calculateExecutionTime)"
+    writeLog "✅ Importação INSS completa em $(calculateExecutionTime)"
     echo ""
 }
 
 # Atualiza pf_telefones
 update_pf_telefones() {
     IFS=';' read -ra LINE_VALUES <<< "$1"
-    local START_TIME_UPDATE=$(date +%s%3N) cpf="${LINE_VALUES[0]}" nome="${LINE_VALUES[7]}" all_phones
+    local START_TIME_UPDATE=$(date +%s%3N) all_phones
     local fields="id, telefone, ranking, origem, data_origem, temp_min, temp_max, ok_calls_total, last_ok_date, whatsapp_checked_at, err_404_notfound, err_503_blacklist_stage, penal_487_cancel, penal_480_noanswer, last_error_date"
-    local -i inserts=0 updates=0 data_total=0
+    local updated_at=$(date +"%Y-%m-%d %H:%M:%S.%N")
+    local cpf="${LINE_VALUES[0]}" nome="${LINE_VALUES[7]}" tipo_celular="CELULAR"
+    local -i inserts=0 updates=0
+
+    # normalizando cpf
+    cpf=$(printf "%011s" "$cpf" | tr ' ' '0')
 
     [[ -z "$cpf" ]] && continue
     COUNT_LINES+=1
 
-    # Criando o novo registro do telefone
-    local -i last_ranking=1 data_new_total=0
+    # Criando o novo registro do telefone com base no CPF do CSV
+    local -i last_ranking=1 count_total_phones_cpf=0
     declare -A data_new
     for i in {1..5}; do
         local numero_telefone="${LINE_VALUES[$i]}"
@@ -64,7 +68,7 @@ update_pf_telefones() {
         declare "data_new[$numero_telefone,origem]=$ORIGEM"
         declare "data_new[$numero_telefone,data_origem]=$DATA_ORIGEM"
 
-        ((data_new_total++))
+        ((count_total_phones_cpf++))
         ((last_ranking++))
     done
 
@@ -72,7 +76,8 @@ update_pf_telefones() {
     local query="SELECT $fields FROM $PROD_POSTGRES_DB_SCHEMA.pf_telefones WHERE cpf = '$cpf' ORDER BY ranking, id"
     local out=$("${PROD_PSQL_CMD[@]}" -t -c "$query" < /dev/null )
     eval "$(outToArray "$out" "$fields")"
-    data_total=$(( data_index + data_new_total ))
+
+    # Loop nos telefones do banco de dados
     for ((i=0; i<$data_index; i++)); do
         local idBanco="${data[$i,id]}"
         local telefoneBanco="${data[$i,telefone]}"
@@ -86,7 +91,7 @@ update_pf_telefones() {
 
         [[ $telefoneBanco != $telefoneCsv ]] && {
             all_phones+=";$telefoneBanco"
-            ((data_new_total++))
+            ((count_total_phones_cpf++))
             ((last_ranking++))
         }
     done
@@ -98,14 +103,20 @@ update_pf_telefones() {
         declare "data_new[$telefone,ranking]=$ranking"
         local id="${data_new[$telefone,id]}"
 
+        case ${#telefone} in
+            11) tipo_celular="CELULAR";;
+             *) tipo_celular="FIXO";;
+        esac
+
         if [[ -v $id ]]; then
             local query_insert="INSERT INTO 
                 $PROD_POSTGRES_DB_SCHEMA.pf_telefones 
-                (cpf, telefone, ranking, origem, data_origem) VALUES 
-                ('$cpf', '$telefone', $ranking, '$ORIGEM', '$DATA_ORIGEM')"
+                (cpf, telefone, ranking, origem, data_origem, updated_at, tipo) VALUES 
+                ('$cpf', '$telefone', $ranking, '$ORIGEM', '$DATA_ORIGEM', '$updated_at', '$tipo_celular')"
 
             "${PROD_PSQL_CMD[@]}" -q -t -c "$query_insert" < /dev/null
             ((inserts++))
+            ((TOTAL_INSERTS++))
         else
             local query_update="UPDATE 
                 $PROD_POSTGRES_DB_SCHEMA.pf_telefones SET 
@@ -119,21 +130,19 @@ update_pf_telefones() {
                     err_503_blacklist_stage = null, 
                     penal_487_cancel = null, 
                     penal_480_noanswer = null, 
-                    last_error_date = null
+                    last_error_date = null,
+                    tipo = '$tipo_celular',
+                    updated_at = '$updated_at'
                     WHERE id=$id"
 
             "${PROD_PSQL_CMD[@]}" -q -t -c "$query_update" < /dev/null
             ((updates++))
+            ((TOTAL_UPDATES++))
         fi
-
-        # echo "Cpf: $cpf Telefone: ${data_new[$telefone,telefone]} | Ranking: ${data_new[$telefone,ranking]} | Id: $id"
         ((ranking++))
     done
 
-    writeLog "📥 $(format_number $COUNT_LINES)) CPF '$cpf' com '$data_new_total' telefones atualizado com sucesso. INSERTs: $inserts, UPDATEs: $updates"
-
-    TOTAL_INSERTS+=$inserts
-    TOTAL_UPDATES+=$updates
+    writeLog "📥 $(format_number $COUNT_LINES)) CPF '$cpf' com '$count_total_phones_cpf' telefones atualizado com sucesso. INSERTs: $inserts, UPDATEs: $updates"
 }
 
 main() {

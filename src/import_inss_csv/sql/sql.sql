@@ -1,23 +1,52 @@
-SELECT * 
+SELECT count(1)	FROM bigdata_final.pf_telefones WHERE ranking>0;
+SELECT id, ranking, cpf, telefone, origem, data_origem, updated_at 
 	FROM bigdata_final.pf_telefones 
-	WHERE updated_at>'2025-10-20'
-	ORDER BY id DESC 
+	WHERE ranking>0
+	ORDER BY id
 	LIMIT 100;
+
+SELECT count(1) 
+	FROM bigdata_final.pf_telefones 
+	WHERE origem='LEMIT' AND id>276260285;
+SELECT count(1) 
+	FROM bigdata_final.pf_telefones 
+	WHERE ranking>0;
+	
+SELECT count(1)
+	FROM bigdata_final.pf_telefones 
+	WHERE updated_at > '2025-10-20';
+
+SELECT id, cpf, telefone, origem, data_origem, updated_at
+	FROM bigdata_final.pf_telefones 
+	WHERE origem='LEMIT'
+	ORDER BY id 
+	LIMIT 10;
+
+SELECT count(1) 
+	FROM bigdata_final.pf_telefones 
+	WHERE id>276260285;
+
+SELECT id, cpf, telefone, updated_at, origem, data_origem
+	FROM bigdata_final.pf_telefones 
+	WHERE updated_at>'2025-10-20' 
+	AND origem='LEMIT'
+	ORDER BY id ASC 
+	LIMIT 4325;
 	
 SELECT * 
 	FROM bigdata_final.pf_telefones 
-	WHERE cpf='49092910244'
+	WHERE cpf='52890783987'
 	ORDER BY id DESC 
 	LIMIT 100;
 
-SELECT id 
+SELECT id, updated_at 
 	FROM bigdata_final.pf_telefones 
 	ORDER BY id DESC 
 	LIMIT 3;
 
 SELECT COUNT(1) FROM bigdata_final.pf_telefones;
 SELECT COUNT(1) FROM bigdata_final.pf_telefones WHERE updated_at>'2025-10-20';
-
+SELECT count(1) FROM bigdata_final.pf_telefones WHERE id>276260285;
 SELECT * FROM bigdata_final.pf_telefones WHERE id>276260285;
 
 CREATE SEQUENCE bigdata_final.pf_telefones_id_seq
