@@ -142,7 +142,9 @@ update_pf_telefones() {
         ((ranking++))
     done
 
-    writeLog "📥 $(format_number $COUNT_LINES)) CPF '$cpf' com '$count_total_phones_cpf' telefones atualizado com sucesso. INSERTs: $inserts, UPDATEs: $updates"
+    if ( ( $COUNT_LINES % 2000 ) === 0 ) {
+        writeLog "📥 $(format_number $COUNT_LINES)) CPF '$cpf' com '$count_total_phones_cpf' telefones atualizado com sucesso. INSERTs: $inserts, UPDATEs: $updates"
+    }
 }
 
 main() {
