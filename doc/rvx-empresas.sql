@@ -1,3 +1,23 @@
+SELECT id, cpf, telefone, ranking 
+	FROM bigdata_final.pf_telefones 
+	WHERE ranking>0
+	ORDER BY id DESC
+	LIMIT 10;
+
+-- tamanho e registros de cada tabela
+SELECT 
+    s.relname AS tabela,
+    pg_size_pretty(pg_total_relation_size(s.relid)) AS tamanho,
+    c.reltuples::bigint AS registros_estimados
+FROM 
+    pg_catalog.pg_stat_user_tables AS s
+JOIN 
+    pg_catalog.pg_class AS c ON c.oid = s.relid
+WHERE 
+    s.schemaname = 'bigdata_final'
+ORDER BY 
+    pg_total_relation_size(s.relid) DESC;
+	
 -- tamanho de cada tabela
 SELECT 
   relname AS tabela, 
