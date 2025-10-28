@@ -24,7 +24,7 @@ fi
 readonly PSQL_CMD=( docker exec -i -e PGPASSWORD="$POSTGRES_DB_PASSWORD" $POSTGRES_CONTAINER 
   psql 
   -h "127.0.0.1" 
-  -p "5432" 
+  -p "5432" # A porta é do container 
   -U "$POSTGRES_DB_USER" 
   -d "$POSTGRES_DB_DATABASE"
 )
@@ -53,7 +53,7 @@ readonly MONGOIMPORT_CMD=(
 # Atalho para conexão com o banco remoto
 readonly PROD_PSQL_CMD=( docker exec -i -e PGPASSWORD="$PROD_POSTGRES_DB_PASSWORD" $POSTGRES_CONTAINER 
   psql 
-  -p "5432" 
+  -p "5432" # A porta é do container 
   -h "$PROD_POSTGRES_DB_HOST" 
   -U "$PROD_POSTGRES_DB_USER" 
   -d "$PROD_POSTGRES_DB_DATABASE"
